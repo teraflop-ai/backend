@@ -1,16 +1,29 @@
 [project]
-name = "backend"
+name = "app"
 version = "0.1.0"
-description = "Add your description here"
+description = "API backend for embedding and ml server."
 readme = "README.md"
 authors = [
-    { name = "Enrico Shippole", email = "enricoship@gmail.com" }
+    { name = "Enrico Shippole", email = "enrico@teraflop.ai" }
 ]
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "alembic>=1.15.1",
+    "authlib>=1.5.1",
+    "fastapi[standard]>=0.115.11",
+    "granian>=2.1.0",
+    "infisicalsdk>=1.0.6",
+    "loguru>=0.7.3",
+    "minio>=7.2.15",
+    "modal>=0.73.114",
+    "msgspec>=0.19.0",
+    "stripe>=11.6.0",
+    "supabase>=2.13.0",
+    "valkey[libvalkey]>=6.1.0",
+]
 
 [project.scripts]
-backend = "backend:main"
+app = "app:main"
 
 [build-system]
 requires = ["hatchling"]
