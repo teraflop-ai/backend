@@ -14,6 +14,5 @@ class Item(BaseModel):
 @app.function()
 @modal.fastapi_endpoint(method="POST")
 def f(item: Item):
-    import boto3
     # do things with boto3...
     return HTMLResponse(f"<html>Hello, {item.name}!</html>")
