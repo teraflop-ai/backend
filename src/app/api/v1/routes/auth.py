@@ -1,37 +1,11 @@
-import os
 import json
 from authlib.integrations.starlette_client import OAuth, OAuthError
-from dotenv_vault import load_dotenv
-from fastapi import FastAPI, Request
+from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse, HTMLResponse
-from infisical_sdk import InfisicalSDKClient
 from starlette.config import Config
-from starlette.middleware.sessions import SessionMiddleware
+from app.infisical.infisical import (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET)
 
-load_dotenv()
-
-app = FastAPI()
-
-client = InfisicalSDKClient(host="https://app.infisical.com")
-
-client.auth.universal_auth.login(
-    client_id=os.getenv("INFISICAL_CLIENT_ID"),
-    client_secret=os.getenv("INFISICAL_CLIENT_SECRET"),
-)
-
-GOOGLE_CLIENT_ID = client.secrets.get_secret_by_name(
-    secret_name="GOOGLE_CLIENT_ID",
-    project_id=os.getenv("INFISICAL_PROJECT_ID"),
-    environment_slug="dev",
-    secret_path="/",
-)
-
-GOOGLE_CLIENT_SECRET = client.secrets.get_secret_by_name(
-    secret_name="GOOGLE_CLIENT_SECRET",
-    project_id=os.getenv("INFISICAL_PROJECT_ID"),
-    environment_slug="dev",
-    secret_path="/",
-)
+router = APIRouter()
 
 oauth = OAuth(
     config=Config(
@@ -48,9 +22,8 @@ oauth.register(
     client_kwargs={"scope": "openid email profile"},
 )
 
-app.add_middleware(SessionMiddleware, secret_key="my-string")
 
-@app.get('/')
+@router.get('/')
 async def homepage(request: Request):
     user = request.session.get('user')
     if user:
@@ -62,19 +35,20 @@ async def homepage(request: Request):
         return HTMLResponse(html)
     return HTMLResponse('<a href="/login">login</a>')
 
-@app.get("/login", name="login")
+
+@router.get("/login")
 async def login_google(request: Request):
-    redirect_uri = request.url_for("auth")
+    redirect_uri = request.url_for("auth_google")
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 
-@app.get("/logout", name="logout")
+@router.get("/logout")
 async def logout(request: Request):
     request.session.pop("user", None)
     return RedirectResponse(url="/")
 
 
-@app.get("/auth", name="auth")
+@router.get("/auth")
 async def auth_google(request: Request):
     try:
         token = await oauth.google.authorize_access_token(request)
@@ -82,12 +56,10 @@ async def auth_google(request: Request):
         return e
 
     user = token.get("userinfo")
+
+
+    
+
     if user:
         request.session["user"] = dict(user)
     return RedirectResponse(url="/")
-
-
-if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run(app, host="127.0.0.1", port=8000)
