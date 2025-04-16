@@ -1,10 +1,10 @@
 from stripe import Customer, checkout, error
-from app.infisical.infisical import (STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY)
+from app.secrets.infisical import (STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY)
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
-router = APIRouter()
+payment_router = APIRouter(prefix="/payments", tags=["Payments"])
 
-@router.get()
+@payment_router.get("")
 async def create_payments():
     pass

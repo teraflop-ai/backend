@@ -3,9 +3,9 @@ from authlib.integrations.starlette_client import OAuth, OAuthError
 from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse, HTMLResponse
 from starlette.config import Config
-from app.infisical.infisical import (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET)
+from app.secrets.infisical import (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET)
 
-router = APIRouter()
+auth_router = APIRouter()
 
 oauth = OAuth(
     config=Config(
@@ -23,7 +23,7 @@ oauth.register(
 )
 
 
-@router.get('/')
+@auth_router.get('/')
 async def homepage(request: Request):
     user = request.session.get('user')
     if user:
@@ -36,19 +36,19 @@ async def homepage(request: Request):
     return HTMLResponse('<a href="/login">login</a>')
 
 
-@router.get("/login")
+@auth_router.get("/login")
 async def login_google(request: Request):
     redirect_uri = request.url_for("auth_google")
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 
-@router.get("/logout")
+@auth_router.get("/logout")
 async def logout(request: Request):
     request.session.pop("user", None)
     return RedirectResponse(url="/")
 
 
-@router.get("/auth")
+@auth_router.get("/auth")
 async def auth_google(request: Request):
     try:
         token = await oauth.google.authorize_access_token(request)
