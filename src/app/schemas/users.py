@@ -1,6 +1,6 @@
-from pydantic import BaseModel
+from msgspec import Struct
 
-class User(BaseModel):
+class User(Struct):
     id: str
     email: str
     credits: int

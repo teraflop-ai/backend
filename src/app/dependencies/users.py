@@ -1,20 +1,24 @@
 from app.schemas.users import User
 from fastapi import Request, HTTPException
-from app.database import supabase
+from app.database.supabase import create_supabase_client
 from loguru import logger
 
-async def get_current_user(request: Request):
+async def get_current_user(request: Request, ):
+    """
+    """
     user_id = request.session.get('user_id')
     
     if not user_id:
          raise HTTPException(status_code=401, detail="User not authenticated")
     
     try:
-        response = supabase.table('users') \
-                            .select('id, email, credits, google_id') \
-                            .eq('id', user_id) \
-                            .limit(1) \
-                            .execute()
+        response = (
+            supabase.table('users') \
+            .select('id, email, credits, google_id') \
+            .eq('id', user_id) \
+            .limit(1) \
+            .execute()
+        )
 
         if not response.data:
             raise HTTPException(status_code=401, detail="User not found")
