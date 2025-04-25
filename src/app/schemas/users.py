@@ -3,5 +3,5 @@ from msgspec import Struct
 class User(Struct):
     id: str
     email: str
-    credits: int
+    balance: int
     google_id: str | None = None

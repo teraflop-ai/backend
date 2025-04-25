@@ -1,11 +1,9 @@
 import stripe
 from fastapi import HTTPException
 from loguru import logger
-from supabase import create_client, Client
+from app.dependencies.supabase import Client
 
-async def get_stripe_customer(user_id: str):
-    """
-    """
+async def get_stripe_customer(user_id: str, supabase: Client):
     try:
 
         stripe_customer = stripe.Customer.create(

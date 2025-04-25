@@ -1,9 +1,10 @@
 from app.schemas.users import User
 from fastapi import Request, HTTPException
-from app.database.supabase import create_supabase_client
+from app.dependencies.supabase import Client
 from loguru import logger
 
-async def get_current_user(request: Request, ):
+
+async def get_current_user(request: Request, supabase: Client):
     """
     """
     user_id = request.session.get('user_id')
@@ -12,9 +13,27 @@ async def get_current_user(request: Request, ):
          raise HTTPException(status_code=401, detail="User not authenticated")
     
     try:
-        response = (
+        """
+        CREATE OR REPLACE FUNCTION get_current_user(user_id bigint)
+        RETURNS TABLE (
+            id bigint,
+            email text,
+            balance numeric,
+            google_id text
+        )
+        LANGUAGE sql
+        STABLE
+        AS $$
+            SELECT id, email, balance, google_id
+            FROM users
+            WHERE id = user_id
+            LIMIT 1
+        $$; 
+        """
+
+        response = await (
             supabase.table('users') \
-            .select('id, email, credits, google_id') \
+            .select('id, email, balance, google_id') \
             .eq('id', user_id) \
             .limit(1) \
             .execute()
