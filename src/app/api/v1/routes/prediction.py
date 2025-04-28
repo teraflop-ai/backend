@@ -1,18 +1,30 @@
-import modal
-from fastapi.responses import HTMLResponse
-from pydantic import BaseModel
+import batched
+from app.schemas.embedding import TextInput, PredictionResponse
+from fastapi import APIRouter, Depends, Request, HTTPException, Header
+from app.dependencies.supabase import Client
 
-image = modal.Image.debian_slim().pip_install("fastapi[standard]", "boto3")
-app = modal.App(image=image)
+prediction_router = APIRouter()
 
-
-class Item(BaseModel):
-    name: str
-    qty: int = 42
-
-
-@app.function()
-@modal.fastapi_endpoint(method="POST")
-def f(item: Item):
-    # do things with boto3...
-    return HTMLResponse(f"<html>Hello, {item.name}!</html>")
+@prediction_router.post("predict_text", response_model=PredictionResponse)
+async def predict_text(input_text: TextInput, supabase: Client):
+    """
+    CREATE OR REPLACE PROCEDURE
+        decrement_balance(user_id BIGINT, amount NUMERIC)
+    RETURNS NUMERIC
+    LANGUAGE plpgsql
+    AS $$
+    BEGIN
+        UPDATE users
+        SET balance = balance - amount
+        WHERE id = user_id
+    END
+    $$
+    """
+    response = await supabase.rpc(
+        "decrement_balance",
+        {
+            "user_id": user_id,
+            "amount": amount,
+        }
+    ).execute()
+    return
