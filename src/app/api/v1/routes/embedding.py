@@ -1,18 +1,9 @@
-import modal
-from fastapi.responses import HTMLResponse
-from pydantic import BaseModel
+import batched
+from app.schemas.embedding import TextInput, EmbeddingResponse
+from fastapi import APIRouter, Depends, Request, HTTPException, Header
 
-image = modal.Image.debian_slim().pip_install("fastapi[standard]", "boto3")
-app = modal.App(image=image)
+embedding_router = APIRouter()
 
-
-class Item(BaseModel):
-    name: str
-    qty: int = 42
-
-
-@app.function()
-@modal.fastapi_endpoint(method="POST")
-def f(item: Item):
-    # do things with boto3...
-    return HTMLResponse(f"<html>Hello, {item.name}!</html>")
+@embedding_router.post("embed_text", response_model=EmbeddingResponse)
+async def embed_text(input_text: TextInput):
+    return

@@ -61,41 +61,28 @@ async def webhook_recieved(request_data, supabase: Client, stripe_signature: Opt
     if event_type == "checkout.session.completed":
         logger.info("Completed checkout")
 
-        # Get user balance
-        """
-        SELECT balance
-        FROM users
-        WHERE id = user_id
-        LIMIT 1
-        """
-        
-        current_balance = supabase.table() \
-            .select("balance") \
-            .eq("id", user_id) \
-            .limit(1) \
-            .single () \
-            .execute()
-
         # Update user balance
 
         """
         CREATE OR REPLACE PROCEDURE
-            update_balance(user_id BIGINT, amount NUMERIC)
+            increment_balance(user_id BIGINT, amount NUMERIC)
         LANGUAGE plpgsql
         AS $$
-        BEGIN ATOMIC
+        BEGIN
             UPDATE users
-            SET balance = balance - amount
+            SET balance = balance + amount
             WHERE id = user_id
-        COMMIT
         END
         $$
         """
 
-        update_balance = supabase.table("users") \
-            .update({"balance", amount}) \
-            .eq("id", user_id) \
-            .execute()
+        update_balance = supabase.rpc(
+            "increment_balance", 
+            {
+                "id" : user_id, 
+                "amount" : amount
+            }
+        ).execute()
     
     return
 
