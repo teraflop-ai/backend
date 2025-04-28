@@ -64,24 +64,28 @@ async def webhook_recieved(request_data, supabase: Client, stripe_signature: Opt
         # Update user balance
 
         """
-        CREATE OR REPLACE PROCEDURE
+        CREATE OR REPLACE FUNCTION 
             increment_balance(user_id BIGINT, amount NUMERIC)
-        RETURNS NUMERIC
+            RETURNS NUMERIC
         LANGUAGE plpgsql
         AS $$
+        DECLARE
+            new_balance numeric;
         BEGIN
             UPDATE users
             SET balance = balance + amount
             WHERE id = user_id
-        END
-        $$
-        """
+            RETURNING balance INTO new_balance;
 
+            RETURN new_balance;
+        END;
+        $$;
+        """
         response = await supabase.rpc(
-            "increment_balance", 
+            "increment_balance",
             {
-                "id" : user_id, 
-                "amount" : amount
+                "user_id": user_id,
+                "amount": amount,
             }
         ).execute()
     
