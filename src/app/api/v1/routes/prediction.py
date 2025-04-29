@@ -1,13 +1,13 @@
 import batched
 from app.schemas.embedding import TextInput, PredictionResponse
 from fastapi import APIRouter, Depends, Request, HTTPException, Header
-from app.dependencies.supabase import Client
+from app.dependencies.db import Client
 import decimal
 
 prediction_router = APIRouter()
 
 @prediction_router.post("predict_text", response_model=PredictionResponse)
-async def predict_text(input_text: TextInput, supabase: Client):
+async def predict_text(input_text: TextInput, Client):
     """
     CREATE OR REPLACE FUNCTION 
         decrement_balance(user_id BIGINT, amount NUMERIC)
@@ -26,11 +26,4 @@ async def predict_text(input_text: TextInput, supabase: Client):
     END;
     $$;
     """
-    response = await supabase.rpc(
-        "decrement_balance",
-        {
-            "user_id": user_id,
-            "amount": amount,
-        }
-    ).execute()
     return

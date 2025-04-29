@@ -2,22 +2,17 @@ import batched
 from sentence_transformers import SentenceTransformer
 from app.schemas.embedding import TextInput, EmbeddingResponse
 from fastapi import APIRouter, Depends, Request, HTTPException, Header
-from app.dependencies.supabase import Client
+from app.dependencies.db import Client
 import decimal
 
 embedding_router = APIRouter()
 
 @embedding_router.post("embed_text", response_model=EmbeddingResponse)
-async def embed_text(input_text: TextInput, supabase: Client):
+async def embed_text(input_text: TextInput, Client):
 
     """
     
     """
-
-    model_name = supabase.table() \
-        .select() \
-        .eq() \
-        .execute()
 
     model = SentenceTransformer(model_name)
     model.half()
@@ -42,11 +37,4 @@ async def embed_text(input_text: TextInput, supabase: Client):
     END;
     $$;
     """
-    response = await supabase.rpc(
-        "decrement_balance",
-        {
-            "user_id": user_id,
-            "amount": amount,
-        }
-    ).execute()
     return EmbeddingResponse(embedding=embedding[0].tolist())

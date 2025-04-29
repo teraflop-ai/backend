@@ -1,11 +1,9 @@
-from supabase import AsyncClientOptions
-from supabase._async.client import AsyncClient, create_client
 from app.secrets.infisical import (SUPABASE_URL, SUPABASE_KEY)
 
 supabase_url: str = SUPABASE_URL.secretValue
 supabase_key: str = SUPABASE_KEY.secretValue
 
-async def create_supabase_client() -> AsyncClient:
+async def create_supabase_client():
     """
     Creates the supabase client
     """

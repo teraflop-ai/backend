@@ -1,13 +1,13 @@
 import batched
 from app.schemas.embedding import TextInput, SearchResponse
 from fastapi import APIRouter, Depends, Request, HTTPException, Header
-from app.dependencies.supabase import Client
+from app.dependencies.db import Client
 import decimal
 
 search_router = APIRouter()
 
 @search_router.post("search_text", response_model=SearchResponse)
-async def search_text(input_text: TextInput, supabase: Client):
+async def search_text(input_text: TextInput, Client):
     """
     CREATE OR REPLACE FUNCTION 
         decrement_balance(user_id BIGINT, amount NUMERIC)
@@ -26,11 +26,4 @@ async def search_text(input_text: TextInput, supabase: Client):
     END;
     $$;
     """
-    response = await supabase.rpc(
-        "decrement_balance",
-        {
-            "user_id": user_id,
-            "amount": amount,
-        }
-    ).execute()
     return

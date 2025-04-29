@@ -1,7 +1,7 @@
 import stripe
 from fastapi import HTTPException
 from loguru import logger
-from app.dependencies.supabase import Client
+from app.dependencies.db import Client
 
 async def get_stripe_customer(user_id: str, supabase: Client):
     try:

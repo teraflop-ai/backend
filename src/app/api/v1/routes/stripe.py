@@ -6,7 +6,7 @@ from slowapi.util import get_remote_address
 from fastapi import APIRouter, Depends, Request, HTTPException, Header
 from fastapi.responses import RedirectResponse
 import decimal
-from app.dependencies.supabase import Client
+from app.dependencies.db import Client
 from loguru import logger
 
 domain_prefix = 'http://localhost:127.0.0.1'
@@ -81,13 +81,6 @@ async def webhook_recieved(request_data, supabase: Client, stripe_signature: Opt
         END;
         $$;
         """
-        response = await supabase.rpc(
-            "increment_balance",
-            {
-                "user_id": user_id,
-                "amount": amount,
-            }
-        ).execute()
     
     return
 
