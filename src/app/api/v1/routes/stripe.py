@@ -43,7 +43,7 @@ def create_checkout_session(request: Request):
         return HTTPException(403)
 
 @payment_router.post("")
-async def webhook_recieved(request_data, supabase: Client, stripe_signature: Optional[str] = Header(None)):
+async def webhook_recieved(request_data, asyncpg_client: Client, stripe_signature: Optional[str] = Header(None)):
     
     payload = await request_data.body()
     
@@ -53,34 +53,27 @@ async def webhook_recieved(request_data, supabase: Client, stripe_signature: Opt
             sig_header=stripe_signature,
             secret=""
         )
+
+        event_type = event["type"]
     except Exception as e:
         return
-    
-    event_type = event["type"]
 
     if event_type == "checkout.session.completed":
         logger.info("Completed checkout")
 
         # Update user balance
 
-        """
-        CREATE OR REPLACE FUNCTION 
-            increment_balance(user_id BIGINT, amount NUMERIC)
-            RETURNS NUMERIC
-        LANGUAGE plpgsql
-        AS $$
-        DECLARE
-            new_balance numeric;
-        BEGIN
-            UPDATE users
-            SET balance = balance + amount
-            WHERE id = user_id
-            RETURNING balance INTO new_balance;
-
-            RETURN new_balance;
-        END;
-        $$;
-        """
+        async with asyncpg_client.acquire() as connection:
+            async with connection.transaction():
+                await connection.execute(
+                    """
+                    UPDATE users
+                    SET balance = balance + $1
+                    WHERE id = $2
+                    """,
+                    amount,
+                    user_id
+                )
     
     return
 

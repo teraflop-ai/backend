@@ -5,36 +5,28 @@ from fastapi import APIRouter, Depends, Request, HTTPException, Header
 from app.dependencies.db import Client
 import decimal
 
+
 embedding_router = APIRouter()
 
-@embedding_router.post("embed_text", response_model=EmbeddingResponse)
-async def embed_text(input_text: TextInput, Client):
 
-    """
-    
-    """
+@embedding_router.post("embed_text", response_model=EmbeddingResponse, dependencies=[])
+async def embed_text(input_text: TextInput, asyncpg_client: Client):
 
-    model = SentenceTransformer(model_name)
-    model.half()
-    model.encode = batched.aio.dynamically((model.encode))
-    embedding = await model.encode([input_text.input])
 
-    """
-    CREATE OR REPLACE FUNCTION 
-        decrement_balance(user_id BIGINT, amount NUMERIC)
-        RETURNS NUMERIC
-    LANGUAGE plpgsql
-    AS $$
-    DECLARE
-        new_balance numeric;
-    BEGIN
-        UPDATE users
-        SET balance = balance - amount
-        WHERE id = user_id
-        RETURNING balance INTO new_balance;
 
-        RETURN new_balance;
-    END;
-    $$;
-    """
+    async with asyncpg_client.acquire() as connection:
+        async with connection.transaction():
+            await connection.execute(
+                """
+                UPDATE users
+                SET balance = balance - $1
+                WHERE id = $2
+                """, 
+                amount, 
+                user_id
+            )
+
     return EmbeddingResponse(embedding=embedding[0].tolist())
+
+def baseten_embed(model_id, payload):
+    pass

@@ -23,19 +23,6 @@ oauth.register(
 )
 
 
-@auth_router.get('/')
-async def homepage(request: Request):
-    user = request.session.get('user')
-    if user:
-        data = json.dumps(user)
-        html = (
-            f'<pre>{data}</pre>'
-            '<a href="/logout">logout</a>'
-        )
-        return HTMLResponse(html)
-    return HTMLResponse('<a href="/login">login</a>')
-
-
 @auth_router.get("/login")
 async def login_google(request: Request):
     redirect_uri = request.url_for("auth_google")
