@@ -4,7 +4,7 @@ from app.schemas.embedding import TextInput, EmbeddingResponse
 from fastapi import APIRouter, Depends, Request, HTTPException, Header
 from app.dependencies.db import Client
 import decimal
-
+from app.database.db import decrement_balance
 
 embedding_router = APIRouter()
 
@@ -14,17 +14,7 @@ async def embed_text(input_text: TextInput, asyncpg_client: Client):
 
 
 
-    async with asyncpg_client.acquire() as connection:
-        async with connection.transaction():
-            await connection.execute(
-                """
-                UPDATE users
-                SET balance = balance - $1
-                WHERE id = $2
-                """, 
-                amount, 
-                user_id
-            )
+    decrement_balance(amount, user_id, asyncpg_client)
 
     return EmbeddingResponse(embedding=embedding[0].tolist())
 

@@ -8,22 +8,5 @@ search_router = APIRouter()
 
 @search_router.post("search_text", response_model=SearchResponse)
 async def search_text(input_text: TextInput, Client):
-    """
-    CREATE OR REPLACE FUNCTION 
-        decrement_balance(user_id BIGINT, amount NUMERIC)
-        RETURNS NUMERIC
-    LANGUAGE plpgsql
-    AS $$
-    DECLARE
-        new_balance numeric;
-    BEGIN
-        UPDATE users
-        SET balance = balance - amount
-        WHERE id = user_id
-        RETURNING balance INTO new_balance;
-
-        RETURN new_balance;
-    END;
-    $$;
-    """
+    decrement_balance(amount, user_id, asyncpg_client)
     return

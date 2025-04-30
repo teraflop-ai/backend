@@ -6,12 +6,14 @@ from slowapi.util import get_remote_address
 from fastapi import APIRouter, Depends, Request, HTTPException, Header
 from fastapi.responses import RedirectResponse
 import decimal
+from app.database.db import increment_balance
 from app.dependencies.db import Client
 from loguru import logger
 
 domain_prefix = 'http://localhost:127.0.0.1'
 
 payment_router = APIRouter(prefix="/payments", tags=["Payments"])
+
 
 @payment_router.post("")
 def create_checkout_session(request: Request):
@@ -42,6 +44,7 @@ def create_checkout_session(request: Request):
     except Exception as e:
         return HTTPException(403)
 
+
 @payment_router.post("")
 async def webhook_recieved(request_data, asyncpg_client: Client, stripe_signature: Optional[str] = Header(None)):
     
@@ -61,19 +64,11 @@ async def webhook_recieved(request_data, asyncpg_client: Client, stripe_signatur
     if event_type == "checkout.session.completed":
         logger.info("Completed checkout")
 
-        # Update user balance
+        # Update user balance in the db
 
-        async with asyncpg_client.acquire() as connection:
-            async with connection.transaction():
-                await connection.execute(
-                    """
-                    UPDATE users
-                    SET balance = balance + $1
-                    WHERE id = $2
-                    """,
-                    amount,
-                    user_id
-                )
+        increment_balance(amount, user_id, asyncpg_client)
+
+        # Send an email to user with the purchase amount
     
     return
 
