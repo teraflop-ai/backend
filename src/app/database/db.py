@@ -1,45 +1,33 @@
 import asyncpg
 from collections.abc import AsyncGenerator
 from app.secrets.infisical import SUPABASE_URL
+from typing import Optional
 
 db_url: str = SUPABASE_URL.secretValue
 
-async def create_asyncpg_client() -> AsyncGenerator:
-    """
-    Initialize asyncpg connection pool.
-    """
-    
-    pool = await asyncpg.create_pool(dsn=db_url)
+class AsyncManager(object):
+    def __init__(self, db_url):
+        self.db_url = db_url
+        self.pool: Optional[asyncpg.Pool] = None
+
+    async def async_connect(self):
+        try:
+            self.pool = await asyncpg.create_pool(dsn=self.db_url)
+        except Exception as e:
+            raise
+
+    async def async_disconnect(self):
+        try:
+            if self.pool:
+                await self.pool.close()
+        except Exception as e:
+            raise
+
+async_manager = AsyncManager(db_url=db_url)
+
+async def get_db() -> AsyncGenerator:
     try:
-        yield pool
-    finally:
-        if pool:
-            await pool.close()
-
-
-async def increment_balance(amount, user_id, asyncpg_client):
-    async with asyncpg_client.acquire() as connection:
-        async with connection.transaction():
-            await connection.execute(
-                """
-                UPDATE users
-                SET balance = balance + $1
-                WHERE id = $2
-                """, 
-                amount, 
-                user_id
-            )
-
-
-async def decrement_balance(amount, user_id, asyncpg_client):
-    async with asyncpg_client.acquire() as connection:
-        async with connection.transaction():
-            await connection.execute(
-                """
-                UPDATE users
-                SET balance = balance - $1
-                WHERE id = $2
-                """, 
-                amount, 
-                user_id
-            )
+        async with async_manager.pool.acquire() as connection:
+            yield connection
+    except Exception as e:
+        raise

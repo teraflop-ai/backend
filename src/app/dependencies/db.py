@@ -1,6 +1,6 @@
 import asyncpg
 from fastapi import Depends
 from typing import Annotated
-from app.database.db import create_asyncpg_client
+from app.database.db import get_db
 
-Client = Annotated[asyncpg.Pool | asyncpg.Connection, Depends(create_asyncpg_client)]
+AsyncDB = Annotated[asyncpg.Pool | asyncpg.Connection, Depends(get_db)]

@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, Request, HTTPException, Header
 from fastapi.responses import RedirectResponse
 import decimal
 from app.database.db import increment_balance
-from app.dependencies.db import Client
+from app.dependencies.db import AsyncDB
 from loguru import logger
 
 domain_prefix = 'http://localhost:127.0.0.1'
@@ -46,7 +46,7 @@ def create_checkout_session(request: Request):
 
 
 @payment_router.post("")
-async def webhook_recieved(request_data, asyncpg_client: Client, stripe_signature: Optional[str] = Header(None)):
+async def webhook_recieved(request_data, db: AsyncDB, stripe_signature: Optional[str] = Header(None)):
     
     payload = await request_data.body()
     
@@ -66,7 +66,7 @@ async def webhook_recieved(request_data, asyncpg_client: Client, stripe_signatur
 
         # Update user balance in the db
 
-        increment_balance(amount, user_id, asyncpg_client)
+        increment_balance(amount, user_id, db)
 
         # Send an email to user with the purchase amount
     
