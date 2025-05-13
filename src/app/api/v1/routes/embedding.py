@@ -2,7 +2,7 @@ import batched
 from sentence_transformers import SentenceTransformer
 from app.schemas.embedding import TextInput, EmbeddingResponse
 from fastapi import APIRouter, Depends, Request, HTTPException, Header
-from app.dependencies.db import Client
+from app.dependencies.db import AsyncDB
 import decimal
 from app.database.db import decrement_balance
 
@@ -10,7 +10,7 @@ embedding_router = APIRouter()
 
 
 @embedding_router.post("embed_text", response_model=EmbeddingResponse, dependencies=[])
-async def embed_text(input_text: TextInput, asyncpg_client: Client):
+async def embed_text(input_text: TextInput, db: AsyncDB, ):
 
 
 

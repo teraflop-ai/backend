@@ -1,16 +1,16 @@
 import json
-from datetime import datetime, timedelta
-from typing import Optional
+from datetime import timedelta
+from loguru import logger
 from authlib.integrations.starlette_client import OAuth, OAuthError
-from fastapi import APIRouter, Request
-from fastapi.responses import RedirectResponse, HTMLResponse
+from fastapi import APIRouter, Request, HTTPException
+from fastapi.responses import RedirectResponse
 from starlette.config import Config
 from app.secrets.infisical import (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET)
-from jose import JWTError, jwt
 from src.app.core.users import (
     get_user_by_email,
     get_user_by_google_id, 
-    create_user
+    create_user,
+    create_access_token
 )
 
 auth_router = APIRouter()
@@ -33,17 +33,6 @@ oauth.register(
 )
 
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow + timedelta(minutes=15)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
-
-
 @auth_router.get("/login")
 async def login_google(request: Request):
     redirect_uri = request.url_for("auth_google")
@@ -58,41 +47,46 @@ async def logout(request: Request):
 
 @auth_router.get("/auth")
 async def auth_google(request: Request):
+
+    # await google access token
     try:
         token = await oauth.google.authorize_access_token(request)
     except OAuthError as e:
         return e
 
+    # get user info from token
     user_info = token.get("userinfo")
     if not user_info:
-        raise
+        raise HTTPException
 
+    # get user email from user info
     user_email = user_info.get("email")
-    user_google_id = user_info.get("sub")
+    if not user_email:
+        raise HTTPException
 
+    # get user from email 
     user = get_user_by_email(user_email)
+
+    # create the user if they do not exist
     if not user:
-        user = get_user_by_google_id(user_google_id)
-    
-    if user:
-        pass
-    else:
-        # Create user
         user = create_user(user)
 
+    # access token payload
     token_expiration = timedelta(minutes=15)
-    access_token = create_access_token(
-        data={""},
+    access_token_payload = create_access_token(
+        data={
+            "sub": user.get("email"),
+        },
         expires_delta=token_expiration
     )
 
-    if user:
-        request.session["user"] = dict(user)
-    
+    # redirect to user dashboard    
     response = RedirectResponse(url="/dashboard")
+    
+    # set auth cookie token
     response.set_cookie(
         key="",
-        value=access_token,
+        value=access_token_payload,
         httponly=True,
         samesite="lax",
         secure=False,
