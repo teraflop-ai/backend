@@ -17,6 +17,7 @@ payment_router = APIRouter(prefix="/payments", tags=["Payments"])
 
 @payment_router.post("")
 def create_checkout_session(request: Request):
+
     try:
         checkout_session = checkout.Session.create(
             customer="",

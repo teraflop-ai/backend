@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 import valkey as redis
 from starlette.middleware.sessions import SessionMiddleware
+from starlette.middleware.cors import CORSMiddleware
 from app.secrets.infisical import SESSION_SECRET_KEY
 from app.api.includes import api_router
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -22,6 +23,16 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET_KEY.secretValue)
+
+# Add CORSMiddleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 app.include_router(api_router)
 
