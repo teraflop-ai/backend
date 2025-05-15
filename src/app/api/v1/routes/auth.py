@@ -43,7 +43,7 @@ async def login_google(request: Request):
 @auth_router.get("/logout")
 async def logout(response: Response):
     response.delete_cookie(
-        key="cookie_access_token",
+        key="access_token",
         httponly=True,
         samesite="lax",
         secure=False,
@@ -84,9 +84,7 @@ async def auth_google(request: Request):
     # access token payload
     token_expiration = timedelta(minutes=15)
     access_token_payload = create_access_token(
-        data={
-            "sub": user.get("email"),
-        },
+        data={"sub": user.get("email")},
         expires_delta=token_expiration,
     )
 
@@ -97,7 +95,7 @@ async def auth_google(request: Request):
     # set auth cookie token
     logger.info("Setting authentication cookie")
     response.set_cookie(
-        key="cookie_access_token",
+        key="access_token",
         value=access_token_payload,
         httponly=True,
         samesite="lax",
