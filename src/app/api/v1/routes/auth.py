@@ -2,7 +2,7 @@ import json
 from datetime import timedelta
 from loguru import logger
 from authlib.integrations.starlette_client import OAuth, OAuthError
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, Request, HTTPException, Response
 from fastapi.responses import RedirectResponse
 from starlette.config import Config
 from app.secrets.infisical import GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
@@ -12,6 +12,8 @@ from src.app.core.users import (
     create_user,
     create_access_token,
 )
+
+ACCESS_TOKEN_EXPIRE_MINUTES = 1
 
 auth_router = APIRouter()
 
@@ -38,8 +40,15 @@ async def login_google(request: Request):
 
 
 @auth_router.get("/logout")
-async def logout(request: Request):
-    request.session.pop("user", None)
+async def logout(response: Response):
+    response.delete_cookie(
+        key="cookie_access_token",
+        httponly=True,
+        samesite="lax",
+        secure=False,
+        path="/",
+        # domain=".yourdomain.com"
+    )
     return RedirectResponse(url="/")
 
 
@@ -49,8 +58,8 @@ async def auth_google(request: Request):
     try:
         token = await oauth.google.authorize_access_token(request)
     except OAuthError as e:
-        logger.error()
-        return e
+        logger.error("Unable to find get access token")
+        return HTTPException()
 
     # get user info from token
     user_info = token.get("userinfo")
@@ -66,11 +75,10 @@ async def auth_google(request: Request):
 
     # get user from email
     user = get_user_by_email(user_email)
-
-    # create the user if they do not exist
     if not user:
+        # Create new user if they do not exist
         logger.info("User does not exist. Creating user...")
-        user = create_user(user)
+        user = create_user(user_info)
 
     # access token payload
     token_expiration = timedelta(minutes=15)
@@ -82,11 +90,13 @@ async def auth_google(request: Request):
     )
 
     # redirect to user dashboard
+    logger.info("Redirecting")
     response = RedirectResponse(url="/dashboard")
 
     # set auth cookie token
+    logger.info("Setting authentication cookie")
     response.set_cookie(
-        key="",
+        key="cookie_access_token",
         value=access_token_payload,
         httponly=True,
         samesite="lax",
