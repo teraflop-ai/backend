@@ -1,4 +1,4 @@
-import json
+from fastapi import Depends
 from datetime import timedelta
 from loguru import logger
 from authlib.integrations.starlette_client import OAuth, OAuthError
@@ -9,6 +9,7 @@ from app.secrets.infisical import GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
 from src.app.core.users import (
     get_user_by_email,
     get_user_by_google_id,
+    get_current_user,
     create_user,
     create_access_token,
 )
@@ -105,3 +106,7 @@ async def auth_google(request: Request):
         expires=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
     )
     return response
+
+@auth_router.get("/users/me")
+async def user_me(current_user = Depends(get_current_user)):
+    return current_user

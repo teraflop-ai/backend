@@ -104,6 +104,25 @@ async def get_user_by_id(user_id, db: AsyncDB):
         raise
 
 
+async def get_user_by_api_key(api_key: str, db: AsyncDB):
+    try:
+        user_by_api_key = await db.fetchrow(
+            """
+            SELECT *
+            FROM users
+            WHERE user_api_key = $1
+            """,
+            api_key,
+        )
+        if not user_by_api_key:
+            logger.info()
+            raise
+        return user_by_api_key
+    except Exception as e:
+        logger.info()
+        raise
+
+
 async def get_current_user(request: Request) -> User:
     token = request.cookies.get("access_token")
     credentials_exception = HTTPException(
@@ -162,24 +181,5 @@ async def delete_user_api_key(db: AsyncDB):
         pass
 
 
-async def get_user_by_api_key(api_key: str, db: AsyncDB):
-    try:
-        user_id = await db.fetchrow(
-            """
-            SELECT *
-            FROM users
-            WHERE user_api_key = $1
-            """,
-            api_key,
-        )
-        return user_id
-    except Exception as e:
-        raise
-
-
 async def get_current_user_from_apikey():
-    pass
-
-
-async def user_me():
     pass
