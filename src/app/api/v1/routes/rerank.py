@@ -6,6 +6,7 @@ import decimal
 
 search_router = APIRouter()
 
+
 @search_router.post("search_text", response_model=SearchResponse)
 async def search_text(input_text: TextInput, Client):
     decrement_balance(amount, user_id, asyncpg_client)

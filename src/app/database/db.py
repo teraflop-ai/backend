@@ -5,6 +5,7 @@ from typing import Optional
 
 db_url: str = SUPABASE_URL.secretValue
 
+
 class AsyncManager(object):
     def __init__(self, db_url):
         self.db_url = db_url
@@ -23,7 +24,9 @@ class AsyncManager(object):
         except Exception as e:
             raise
 
+
 async_manager = AsyncManager(db_url=db_url)
+
 
 async def get_db() -> AsyncGenerator:
     try:

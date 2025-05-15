@@ -11,11 +11,13 @@ from app.database.db import async_manager
 
 limiter = Limiter()
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await async_manager.async_connect()
     yield
     await async_manager.async_disconnect()
+
 
 app = FastAPI(lifespan=lifespan)
 

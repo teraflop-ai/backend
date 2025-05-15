@@ -8,12 +8,11 @@ template_path = "path/to/file.html"
 
 def send_mail(
     template_path,
-    from_sender: str = "onboarding@resend.dev", 
-    to_recipient: str = "delivered@resend.dev", 
-    subject: str = "Hello World"
+    from_sender: str = "onboarding@resend.dev",
+    to_recipient: str = "delivered@resend.dev",
+    subject: str = "Hello World",
 ) -> Dict:
-    
-    with open(template_path, 'r') as file:
+    with open(template_path, "r") as file:
         html_as_string = file.read()
 
     params: resend.Emails.SendParams = {

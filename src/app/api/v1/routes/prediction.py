@@ -6,9 +6,9 @@ import decimal
 
 prediction_router = APIRouter()
 
+
 @prediction_router.post("predict_text", response_model=PredictionResponse)
 async def predict_text(input_text: TextInput, Client):
-    """
-    """
+    """ """
     decrement_balance(amount, user_id, asyncpg_client)
     return

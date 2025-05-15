@@ -1,5 +1,6 @@
 from msgspec import Struct
 
+
 class User(Struct):
     id: str
     email: str

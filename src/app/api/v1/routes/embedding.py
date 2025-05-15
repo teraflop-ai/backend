@@ -10,13 +10,14 @@ embedding_router = APIRouter()
 
 
 @embedding_router.post("embed_text", response_model=EmbeddingResponse, dependencies=[])
-async def embed_text(input_text: TextInput, db: AsyncDB, ):
-
-
-
+async def embed_text(
+    input_text: TextInput,
+    db: AsyncDB,
+):
     decrement_balance(amount, user_id, asyncpg_client)
 
     return EmbeddingResponse(embedding=embedding[0].tolist())
+
 
 def baseten_embed(model_id, payload):
     pass

@@ -5,11 +5,10 @@ from app.dependencies.db import Client
 
 
 async def get_stripe_customer(request: Request, asyncpg_client: Client):
-    
-    user_id = request.session.get('user_id')
+    user_id = request.session.get("user_id")
 
     # check if stripe customer id exists
-    # if it exists get stripe customer id from db 
+    # if it exists get stripe customer id from db
     # if it does not create stripe customer id and update db
 
     stripe_customer_id: str | None = None
@@ -22,11 +21,10 @@ async def get_stripe_customer(request: Request, asyncpg_client: Client):
                     FROM users
                     WHERE id = $1 
                     """,
-                    user_id
+                    user_id,
                 )
     except Exception as e:
         raise
-
 
     if stripe_customer_id is not None:
         return stripe_customer_id
@@ -51,7 +49,7 @@ async def get_stripe_customer(request: Request, asyncpg_client: Client):
                         WHERE user_id = $2
                         """,
                         new_stripe_customer_id,
-                        user_id
+                        user_id,
                     )
         except Exception as e:
             raise

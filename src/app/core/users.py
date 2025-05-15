@@ -34,7 +34,7 @@ async def create_user(user, db: AsyncDB):
             user.get("email"),
             user.get("sub"),
             user.get("name"),
-            user.get("picture")
+            user.get("picture"),
         )
         return user_record
     except Exception as e:
@@ -56,7 +56,7 @@ async def get_user_by_email(email: str, db: AsyncDB):
         raise
 
 
-async def get_user_by_google_id(google_id, db: AsyncDB):    
+async def get_user_by_google_id(google_id, db: AsyncDB):
     try:
         user_google_id = await db.fetchrow(
             """
@@ -64,7 +64,7 @@ async def get_user_by_google_id(google_id, db: AsyncDB):
             FROM users
             WHERE google_id = $1
             """,
-            google_id
+            google_id,
         )
         return user_google_id
     except Exception as e:
@@ -78,7 +78,7 @@ async def get_user(user_id, db: AsyncDB):
         FROM users
         WHERE id = $1
         """,
-        user_id
+        user_id,
     )
     return user_record
 
@@ -92,7 +92,7 @@ async def get_current_user(request: Request, db: AsyncDB) -> User:
     )
     if token is None:
         raise credentials_exception
-    
+
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id = payload.get("sub")
@@ -102,7 +102,7 @@ async def get_current_user(request: Request, db: AsyncDB) -> User:
             raise HTTPException(status_code=401, detail="User not authenticated")
     except JWTError:
         raise credentials_exception
-    
+
     try:
         user_record = get_user(user_id, db)
         if not user_record:
@@ -120,23 +120,24 @@ def generate_api_key():
     api_key = token_urlsafe(32)
     return api_key
 
-async def create_user_api_key(user, db: AsyncDB):
 
+async def create_user_api_key(user, db: AsyncDB):
     try:
         await db.execute(
             """
             INSERT INTO users
             """,
-
         )
     except Exception as e:
         pass
+
 
 async def delete_user_api_key(db: AsyncDB):
     try:
         await db.execute()
     except:
         pass
+
 
 async def get_user_by_api_key(api_key: str, db: AsyncDB):
     try:
@@ -146,7 +147,7 @@ async def get_user_by_api_key(api_key: str, db: AsyncDB):
             FROM users
             WHERE 
             """,
-            api_key
+            api_key,
         )
         return user_id
     except Exception as e:
@@ -158,4 +159,4 @@ async def get_current_user_from_apikey():
 
 
 async def user_me():
-    pass 
+    pass
