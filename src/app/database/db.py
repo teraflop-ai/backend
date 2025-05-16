@@ -1,10 +1,14 @@
 import asyncpg
 from collections.abc import AsyncGenerator
-# from app.app_secrets.infisical import SUPABASE_URL
+from app.app_secrets.infisical import SUPABASE_URL
 from typing import Optional
 
-# db_url: str = SUPABASE_URL.secretValue
-db_url: str =  "postgresql://henry:mydb@localhost:5432/mydb"
+local= True
+
+db_url: str = SUPABASE_URL.secretValue
+
+if local:
+    db_url: str =  "postgresql://henry:mydb@localhost:5432/mydb"
 
 class AsyncManager(object):
     def __init__(self, db_url):

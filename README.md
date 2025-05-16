@@ -37,7 +37,7 @@ Drop db
 dropdb mydb
 ```
 Create Users Table
-```
+```bash
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     google_id VARCHAR(255) UNIQUE,
@@ -45,6 +45,18 @@ CREATE TABLE IF NOT EXISTS users (
     full_name VARCHAR(255),
     picture_url TEXT
 );
+```
+List tables
+```bash
+\dt
+```
+Rename table column
+```
+ALTER TABLE table_name RENAME COLUMN name to new_name;
+```
+Drop table column
+```
+ALTER TABLE table_name DROP COLUMN name;
 ```
 
 # Fastapi
