@@ -1,6 +1,6 @@
 import asyncpg
 from collections.abc import AsyncGenerator
-from app.app_secrets.infisical import SUPABASE_URL
+from app.infisical.infisical import SUPABASE_URL
 from typing import Optional
 
 local= True

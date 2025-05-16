@@ -2,7 +2,7 @@ from fastapi import FastAPI
 import valkey as redis
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.cors import CORSMiddleware
-from app.app_secrets.infisical import SESSION_SECRET_KEY
+from app.infisical.infisical import SESSION_SECRET_KEY
 from app.api.includes import api_router
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded

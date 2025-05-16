@@ -8,7 +8,7 @@ from fastapi.security.api_key import APIKeyHeader
 from loguru import logger
 from secrets import token_urlsafe
 from app.schemas.users import User
-from app.app_secrets.infisical import SESSION_SECRET_KEY
+from app.infisical.infisical import SESSION_SECRET_KEY
 from pwdlib import PasswordHash
 
 SECRET_KEY = SESSION_SECRET_KEY.secretValue

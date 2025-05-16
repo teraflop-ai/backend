@@ -5,11 +5,10 @@ from authlib.integrations.starlette_client import OAuth, OAuthError
 from fastapi import APIRouter, Request, HTTPException, Response
 from fastapi.responses import RedirectResponse
 from starlette.config import Config
-from app.app_secrets.infisical import GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+from app.infisical.infisical import GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
 from app.dependencies.db import AsyncDB
 from app.core.users import (
     get_user_by_email,
-    get_user_by_google_id,
     get_current_user,
     create_user,
     create_access_token,

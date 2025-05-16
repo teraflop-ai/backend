@@ -1,5 +1,5 @@
 import requests
-from app.app_secrets.infisical import BASETEN_API_KEY
+from app.infisical.infisical import BASETEN_API_KEY
 from app.core.logging import setup_logger
 
 setup_logger()

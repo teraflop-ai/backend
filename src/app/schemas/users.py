@@ -8,6 +8,10 @@ class User(Struct):
     google_id: str    
     picture_url: str
 
+class UserBalance(Struct):
+    email: str
+    balance: float
+
 class UserAPIKey(Struct):
     hashed_api_key: str
 
