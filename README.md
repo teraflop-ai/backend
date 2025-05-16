@@ -36,6 +36,16 @@ Drop db
 ```bash
 dropdb mydb
 ```
+Create Users Table
+```
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    google_id VARCHAR(255) UNIQUE,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    full_name VARCHAR(255),
+    picture_url TEXT
+);
+```
 
 # Fastapi
 

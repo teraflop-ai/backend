@@ -4,6 +4,6 @@ from typing import Optional
 class User(Struct):
     id: int
     email: str
-    name: str
+    full_name: str
     google_id: str    
     picture_url: str

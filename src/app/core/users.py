@@ -33,7 +33,7 @@ async def create_user(user: dict, db: AsyncDB):
     try:
         user_record = await db.fetchrow(
             """
-            INSERT INTO users (email, name, google_id, picture_url)
+            INSERT INTO users (email, full_name, google_id, picture_url)
             VALUES ($1, $2, $3, $4)
             RETURNING *
             """,
@@ -43,13 +43,13 @@ async def create_user(user: dict, db: AsyncDB):
             user.get("picture"),
         )
         if user_record:
-            logger.info()
+            logger.info(f"Created user: {user_record}")
             return User(**dict(user_record))
         else:
             logger.error("Failed to create user")
             raise Exception("User creation failed")
     except Exception as e:
-        logger.error()
+        logger.error({e})
         raise
 
 
@@ -62,17 +62,18 @@ async def get_user_by_email(email: str, db: AsyncDB):
             SELECT *
             FROM users
             WHERE email = $1
+            LIMIT 1
             """,
             email,
         )
         if user_by_email:
-            logger.info()
+            logger.info(f"{user_by_email}")
             return User(**dict(user_by_email))
         else:
             logger.error("Failed to get user email")
-            raise Exception()
+            return None
     except Exception as e:
-        logger.error()
+        logger.error(f"{e}")
         raise
 
 
@@ -144,7 +145,7 @@ async def get_user_by_api_key(api_key: str, db: AsyncDB):
         raise
 
 
-async def get_current_user(request: Request) -> User:
+async def get_current_user(request: Request, db: AsyncDB) -> User:
     """
     """
     token = request.cookies.get("access_token")
@@ -154,25 +155,25 @@ async def get_current_user(request: Request) -> User:
         headers={"WWW-Authenticate": "Bearer"},
     )
     if token is None:
-        logger.error()
+        logger.error(f"{credentials_exception}")
         raise credentials_exception
 
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_email = payload.get("sub")
         if not user_email:
-            logger.error()
+            logger.error(f"{user_email}")
             raise HTTPException(status_code=401, detail="User not authenticated")
     except JWTError:
-        logger.error()
+        logger.error("Reeeee")
         raise credentials_exception
 
     try:
-        user_record = get_user_by_email(user_email)
+        user_record = await get_user_by_email(user_email, db)
         if not user_record:
-            logger.error()
+            logger.error(f"{user_record}")
             raise credentials_exception
-        return User(dict(**user_record))
+        return user_record
     except Exception as e:
         logger.error(f"Error fetching user {user_record}: {e}")
         raise HTTPException(status_code=500, detail="Could not retrieve user data.")

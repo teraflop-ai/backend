@@ -14,6 +14,7 @@ from app.core.users import (
     create_user,
     create_access_token,
 )
+import msgspec
 
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 15
@@ -36,7 +37,7 @@ oauth.register(
 )
 
 
-@auth_router.get("/login")
+@auth_router.get("/login/google")
 async def login_google(request: Request):
     redirect_uri = request.url_for("auth_google")
     return await oauth.google.authorize_redirect(request, redirect_uri)
@@ -77,24 +78,24 @@ async def auth_google(request: Request, db: AsyncDB):
         raise HTTPException()
 
     # get user from email
-    user = get_user_by_email(user_email, db)
-    logger.info(user)
+    user = await get_user_by_email(user_email, db)
+    logger.info(f"User found by email {user_email} : {user}")
     if not user:
         # Create new user if they do not exist
         logger.info("User does not exist. Creating user...")
-        user = create_user(user_info, db)
-        logger.info(user)
+        user = await create_user(user_info, db)
+        logger.info(f"Created user: {user}")
 
     # access token payload
     token_expiration = timedelta(minutes=15)
     access_token_payload = create_access_token(
-        data={"sub": user.get("email")},
+        data={"sub": user.email},
         expires_delta=token_expiration,
     )
 
     # redirect to user dashboard
     logger.info("Redirecting")
-    response = RedirectResponse(url="/dashboard")
+    response = RedirectResponse(url="/")
 
     # set auth cookie token
     logger.info("Setting authentication cookie")
@@ -112,4 +113,4 @@ async def auth_google(request: Request, db: AsyncDB):
 
 @auth_router.get("/users/me")
 async def user_me(current_user = Depends(get_current_user)):
-    return current_user
+    return msgspec.to_builtins(current_user)
