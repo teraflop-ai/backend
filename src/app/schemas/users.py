@@ -5,5 +5,5 @@ class User(Struct):
     id: int
     email: str
     name: str
-    google_id: Optional[str] = None
+    google_id: str    
     picture_url: str

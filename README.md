@@ -16,13 +16,17 @@ Check version
 ```bash
 psql --version
 ```
-Connect with super user
+Connect to psql console with super user
 ```bash
 sudo -u postgres psql
 ```
 Create role
 ```bash
-CREATE ROLE myname LOGIN CREATEDB;
+CREATE ROLE username LOGIN CREATEDB;
+```
+Change password
+```
+ALTER USER username PASSWORD "password";
 ```
 Create db
 ```bash
@@ -31,4 +35,11 @@ create mydb
 Drop db
 ```bash
 dropdb mydb
+```
+
+# Fastapi
+
+Start Fastapi server
+```
+fastapi dev  ../backend/src/app/main.py
 ```

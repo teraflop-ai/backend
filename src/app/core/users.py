@@ -8,9 +8,10 @@ from fastapi.security.api_key import APIKeyHeader
 from loguru import logger
 from secrets import token_urlsafe
 from app.schemas.users import User
+from app.app_secrets.infisical import SESSION_SECRET_KEY
 
-SECRET_KEY = 1
-ALGORITHM = 1
+SECRET_KEY = SESSION_SECRET_KEY.secretValue
+ALGORITHM = "HS256"
 API_KEY_NAME = "X-API-Key"
 api_key_header_scheme = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
 
@@ -27,27 +28,34 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 
 
 async def create_user(user: dict, db: AsyncDB):
+    """
+    """
     try:
-        user_record = await db.execute(
+        user_record = await db.fetchrow(
             """
             INSERT INTO users (email, name, google_id, picture_url)
             VALUES ($1, $2, $3, $4)
+            RETURNING *
             """,
             user.get("email"),
             user.get("name"),
             user.get("sub"),
             user.get("picture"),
         )
-        if not user_record:
+        if user_record:
+            logger.info()
+            return User(**dict(user_record))
+        else:
             logger.error("Failed to create user")
             raise Exception("User creation failed")
-        return User(**dict(user_record))
     except Exception as e:
         logger.error()
         raise
 
 
 async def get_user_by_email(email: str, db: AsyncDB):
+    """
+    """
     try:
         user_by_email = await db.fetchrow(
             """
@@ -57,16 +65,20 @@ async def get_user_by_email(email: str, db: AsyncDB):
             """,
             email,
         )
-        if not user_by_email:
+        if user_by_email:
+            logger.info()
+            return User(**dict(user_by_email))
+        else:
             logger.error("Failed to get user email")
             raise Exception()
-        return User(**dict(user_by_email))
     except Exception as e:
         logger.error()
         raise
 
 
 async def get_user_by_google_id(google_id, db: AsyncDB):
+    """
+    """
     try:
         user_by_google_id = await db.fetchrow(
             """
@@ -76,16 +88,20 @@ async def get_user_by_google_id(google_id, db: AsyncDB):
             """,
             google_id,
         )
-        if not user_by_google_id:
+        if user_by_google_id:
+            logger.info()
+            return User(**dict(user_by_google_id))
+        else:
             logger.error()
             raise Exception()
-        return user_by_google_id
     except Exception as e:
         logger.error()
         raise
 
 
 async def get_user_by_id(user_id, db: AsyncDB):
+    """
+    """
     try:
         user_by_id = await db.fetchrow(
             """
@@ -95,16 +111,20 @@ async def get_user_by_id(user_id, db: AsyncDB):
             """,
             user_id,
         )
-        if not user_by_id:
+        if user_by_id:
+            logger.info()
+            return User(**dict(user_by_id))
+        else:
             logger.error("Failed to get user")
             raise Exception()
-        return User(**dict(user_by_id))
     except Exception as e:
         logger.error()
         raise
 
 
 async def get_user_by_api_key(api_key: str, db: AsyncDB):
+    """
+    """
     try:
         user_by_api_key = await db.fetchrow(
             """
@@ -114,16 +134,19 @@ async def get_user_by_api_key(api_key: str, db: AsyncDB):
             """,
             api_key,
         )
-        if not user_by_api_key:
+        if user_by_api_key:
+            return User(**dict(user_by_api_key))
+        else:
             logger.info()
-            raise
-        return user_by_api_key
+            raise Exception()
     except Exception as e:
         logger.info()
         raise
 
 
 async def get_current_user(request: Request) -> User:
+    """
+    """
     token = request.cookies.get("access_token")
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -131,6 +154,7 @@ async def get_current_user(request: Request) -> User:
         headers={"WWW-Authenticate": "Bearer"},
     )
     if token is None:
+        logger.error()
         raise credentials_exception
 
     try:
@@ -154,21 +178,52 @@ async def get_current_user(request: Request) -> User:
         raise HTTPException(status_code=500, detail="Could not retrieve user data.")
 
 
+async def delete_user(db: AsyncDB):
+    """
+    """
+    try:
+        user_deleted = await db.fetchrow(
+            """
+            DELETE FROM users
+            WHERE
+            RETURNING *
+            """
+        )
+        if user_deleted:
+            logger.info()
+            return
+        else:
+            logger.error()
+            raise
+    except Exception as e:
+        logger.error()
+        raise
+        
+
 def generate_api_key():
     api_key = token_urlsafe(32)
     return api_key
 
 
 async def create_user_api_key(user, db: AsyncDB):
+    """
+    """
     random_api_key = generate_api_key()
     try:
-        await db.execute(
+        user_api_key = await db.fetchrow(
             """
             INSERT INTO user_api_keys (api_key)
             VALUE = ($1)
+            RETURNING *
             """,
             random_api_key
         )
+        if user_api_key:
+            logger.info()
+            return
+        else:
+            logger.error()
+            raise
     except Exception as e:
         logger.error()
         raise
@@ -176,7 +231,7 @@ async def create_user_api_key(user, db: AsyncDB):
 
 async def delete_user_api_key(db: AsyncDB):
     try:
-        await db.execute()
+        await db.fetchrow()
     except:
         pass
 

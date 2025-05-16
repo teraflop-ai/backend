@@ -1,18 +1,19 @@
 import stripe
 from typing import Optional
 from stripe import Customer, checkout, error
-from app.secrets.infisical import (
-    STRIPE_SECRET_KEY,
-    STRIPE_PUBLISHABLE_KEY,
-    STRIPE_WEBHOOK_SECRET,
-)
+# from app.app_secrets.infisical import (
+#     STRIPE_SECRET_KEY,
+#     STRIPE_PUBLISHABLE_KEY,
+#     STRIPE_WEBHOOK_SECRET,
+# )
 from slowapi.util import get_remote_address
 from fastapi import APIRouter, Depends, Request, HTTPException, Header
 from fastapi.responses import RedirectResponse
 import decimal
-from app.database.db import increment_balance
+from app.core.transactions import increment_user_balance
 from app.dependencies.db import AsyncDB
 from loguru import logger
+from app.core.users import get_user_by_email
 
 domain_prefix = "http://localhost:127.0.0.1"
 
@@ -46,7 +47,7 @@ def create_checkout_session(request: Request):
 
 @payment_router.post("")
 async def webhook_recieved(
-    request_data, db: AsyncDB, stripe_signature: Optional[str] = Header(None)
+    request_data, stripe_signature: Optional[str] = Header(None)
 ):
     payload = await request_data.body()
 
@@ -64,7 +65,9 @@ async def webhook_recieved(
 
         # Update user balance in the db
 
-        increment_balance(amount, user_id, db)
+
+        user_email = get_user_by_email()
+        # increment_user_balance(amount, user_email)
 
         # Send an email to user with the purchase amount
 

@@ -5,8 +5,9 @@ from authlib.integrations.starlette_client import OAuth, OAuthError
 from fastapi import APIRouter, Request, HTTPException, Response
 from fastapi.responses import RedirectResponse
 from starlette.config import Config
-from app.secrets.infisical import GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
-from src.app.core.users import (
+from app.app_secrets.infisical import GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+from app.dependencies.db import AsyncDB
+from app.core.users import (
     get_user_by_email,
     get_user_by_google_id,
     get_current_user,
@@ -14,7 +15,8 @@ from src.app.core.users import (
     create_access_token,
 )
 
-ACCESS_TOKEN_EXPIRE_MINUTES = 1
+
+ACCESS_TOKEN_EXPIRE_MINUTES = 15
 
 auth_router = APIRouter()
 
@@ -54,7 +56,7 @@ async def logout(response: Response):
 
 
 @auth_router.get("/auth")
-async def auth_google(request: Request):
+async def auth_google(request: Request, db: AsyncDB):
     # await google access token
     try:
         token = await oauth.google.authorize_access_token(request)
@@ -75,11 +77,13 @@ async def auth_google(request: Request):
         raise HTTPException()
 
     # get user from email
-    user = get_user_by_email(user_email)
+    user = get_user_by_email(user_email, db)
+    logger.info(user)
     if not user:
         # Create new user if they do not exist
         logger.info("User does not exist. Creating user...")
-        user = create_user(user_info)
+        user = create_user(user_info, db)
+        logger.info(user)
 
     # access token payload
     token_expiration = timedelta(minutes=15)
@@ -104,6 +108,7 @@ async def auth_google(request: Request):
         expires=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
     )
     return response
+
 
 @auth_router.get("/users/me")
 async def user_me(current_user = Depends(get_current_user)):

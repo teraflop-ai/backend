@@ -1,7 +1,7 @@
 from app.dependencies.db import AsyncDB
 
 
-async def increment_balance(amount, user_id, db: AsyncDB):
+async def increment_user_balance(amount, user_id, db: AsyncDB):
     async with db.transaction():
         await db.execute(
             """
@@ -14,7 +14,7 @@ async def increment_balance(amount, user_id, db: AsyncDB):
         )
 
 
-async def decrement_balance(amount, user_id, db: AsyncDB):
+async def decrement_user_balance(amount, user_id, db: AsyncDB):
     async with db.transaction():
         await db.execute(
             """
