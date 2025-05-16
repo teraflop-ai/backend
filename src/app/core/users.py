@@ -9,6 +9,7 @@ from loguru import logger
 from secrets import token_urlsafe
 from app.schemas.users import User
 from app.app_secrets.infisical import SESSION_SECRET_KEY
+from pwdlib import PasswordHash
 
 SECRET_KEY = SESSION_SECRET_KEY.secretValue
 ALGORITHM = "HS256"
@@ -186,7 +187,7 @@ async def delete_user(db: AsyncDB):
         user_deleted = await db.fetchrow(
             """
             DELETE FROM users
-            WHERE
+            WHERE 
             RETURNING *
             """
         )
@@ -202,13 +203,16 @@ async def delete_user(db: AsyncDB):
         
 
 def generate_api_key():
-    api_key = token_urlsafe(32)
+    api_key = "tf_" + token_urlsafe(32)
     return api_key
 
 
 async def create_user_api_key(user, db: AsyncDB):
     """
     """
+
+    # need to encrypt api key before storage
+
     random_api_key = generate_api_key()
     try:
         user_api_key = await db.fetchrow(

@@ -51,5 +51,5 @@ CREATE TABLE IF NOT EXISTS users (
 
 Start Fastapi server
 ```
-fastapi dev  ../backend/src/app/main.py
+uv run fastapi dev  ../backend/src/app/main.py
 ```

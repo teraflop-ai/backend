@@ -84,6 +84,8 @@ async def auth_google(request: Request, db: AsyncDB):
         # Create new user if they do not exist
         logger.info("User does not exist. Creating user...")
         user = await create_user(user_info, db)
+        if user:
+            pass
         logger.info(f"Created user: {user}")
 
     # access token payload

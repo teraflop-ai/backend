@@ -3,16 +3,12 @@ from typing import Dict
 
 resend.api_key = ""
 
-template_path = "path/to/file.html"
-
-
-def send_mail(
-    template_path,
+def send_welcome_mail(
+    to_recipient: str,
     from_sender: str = "onboarding@resend.dev",
-    to_recipient: str = "delivered@resend.dev",
-    subject: str = "Hello World",
+    subject: str = "Welcome to Teraflop AI",
 ) -> Dict:
-    with open(template_path, "r") as file:
+    with open("../backend/src/app/templates/welcome.html", "r") as file:
         html_as_string = file.read()
 
     params: resend.Emails.SendParams = {
@@ -24,3 +20,9 @@ def send_mail(
 
     email: resend.Email = resend.Emails.send(params)
     return email
+
+def send_purchase_confirmation():
+    pass
+
+def send_user_deleted_mail():
+    pass
