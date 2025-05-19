@@ -15,6 +15,8 @@ from app.core.users import (
 )
 import msgspec
 
+FASTAPI_BACKEND_URL="http://localhost:8000"
+NEXTJS_FRONTEND_URL="http://localhost:3000"
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 15
 
@@ -38,7 +40,7 @@ oauth.register(
 
 @auth_router.get("/login/google")
 async def login_google(request: Request):
-    redirect_uri = request.url_for("auth_google")
+    redirect_uri = FASTAPI_BACKEND_URL + "/auth/"
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 
@@ -96,7 +98,7 @@ async def auth_google(request: Request, db: AsyncDB):
 
     # redirect to user dashboard
     logger.info("Redirecting")
-    response = RedirectResponse(url="/")
+    response = RedirectResponse(url=NEXTJS_FRONTEND_URL + "/dashboard")
 
     # set auth cookie token
     logger.info("Setting authentication cookie")
