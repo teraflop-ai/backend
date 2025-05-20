@@ -25,7 +25,7 @@ async def increment_user_balance(amount, user_email, db: AsyncDB):
         logger.error("error")
         raise
 
-async def decrement_user_balance(amount, user_id, db: AsyncDB):
+async def decrement_user_balance(amount, user_email, db: AsyncDB):
     async with db.transaction():
         await db.execute(
             """
@@ -34,5 +34,19 @@ async def decrement_user_balance(amount, user_id, db: AsyncDB):
             WHERE id = $2
             """,
             amount,
-            user_id,
+            user_email,
         )
+
+async def get_user_balance(user_id, db: AsyncDB):
+    try:
+        user_balance = db.fetchval(
+            """
+            SELECT balance
+            FROM user_balance
+            WHERE id = $1
+            """,
+            user_id
+        )
+        return user_balance
+    except:
+        raise

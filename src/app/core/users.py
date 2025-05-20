@@ -7,7 +7,7 @@ from typing import Optional
 from fastapi.security.api_key import APIKeyHeader
 from loguru import logger
 from secrets import token_urlsafe
-from app.schemas.users import User
+from app.schemas.users import User, UserAPIKey
 from app.infisical.infisical import SESSION_SECRET_KEY
 from pwdlib import PasswordHash
 
@@ -172,7 +172,7 @@ async def get_current_user(request: Request, db: AsyncDB) -> User:
     try:
         user_record = await get_user_by_email(user_email, db)
         if not user_record:
-            logger.error(f"{user_record}")
+            logger.error(f"Found user by email: {user_record}")
             raise credentials_exception
         return user_record
     except Exception as e:
@@ -180,25 +180,29 @@ async def get_current_user(request: Request, db: AsyncDB) -> User:
         raise HTTPException(status_code=500, detail="Could not retrieve user data.")
 
 
-async def delete_user(db: AsyncDB):
+async def delete_current_user(
+    user_id,
+    db: AsyncDB,
+):
     """
     """
     try:
-        user_deleted = await db.fetchrow(
+        deleted_user = await db.fetchrow(
             """
             DELETE FROM users
-            WHERE 
+            WHERE user_id
             RETURNING *
-            """
+            """,
+            user_id,
         )
-        if user_deleted:
-            logger.info()
+        if deleted_user:
+            logger.info(f"Successfully deleted user: {deleted_user}")
             return
         else:
-            logger.error()
+            logger.error("Failed to delete user")
             raise
     except Exception as e:
-        logger.error()
+        logger.error("Reeeeeee")
         raise
         
 
@@ -234,12 +238,46 @@ async def create_user_api_key(user, db: AsyncDB):
         raise
 
 
-async def delete_user_api_key(db: AsyncDB):
+async def delete_user_api_key(user_id: int, db: AsyncDB):
     try:
-        await db.fetchrow()
+        user_api_key = await db.fetchrow(
+            """
+            
+            FROM user_api_keys
+            WHERE 
+            """,
+            user_id,
+        )
     except:
-        pass
+        raise
 
 
-async def get_current_user_from_apikey():
-    pass
+# async def user_from_api_key(
+#     apikey,
+#     db: AsyncDB
+# ):
+#     try:
+#         current_user = db.fetchrow(
+#             """
+
+#             """,
+#             apikey,
+#         )
+#     except:
+#         raise
+
+async def list_user_api_keys(user_id: int, db: AsyncDB):
+    try:
+        user_api_keys = db.fetch(
+            """
+            SELECT *
+            FROM user_api_keys
+            WHERE user_id = $1 AND is_active = TRUE
+            """,
+            user_id,
+        )
+        if user_api_keys:
+            logger.info(f"Found user api keys: {user_api_keys}")
+            return [UserAPIKey(**dict(key)) for key in user_api_keys]
+    except:
+        raise

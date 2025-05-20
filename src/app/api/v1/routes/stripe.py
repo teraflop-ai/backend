@@ -11,7 +11,10 @@ from fastapi import APIRouter, Depends, Request, HTTPException, Header
 from fastapi.responses import RedirectResponse
 import decimal
 
-from app.core.transactions import increment_user_balance
+from app.core.transactions import (
+    increment_user_balance, 
+    get_user_balance
+)
 from app.dependencies.db import AsyncDB
 from loguru import logger
 from app.core.users import get_current_user
@@ -94,6 +97,8 @@ async def webhook_recieved(
                 update_user_balance = increment_user_balance(
                     amount, user_email, db
                 )
+                if update_user_balance:
+                    logger.info("User balance updated")
             except:
                 logger.error("Error")
                 raise
@@ -103,3 +108,11 @@ async def webhook_recieved(
     elif event["type"] == "payment_intent.succeeded":
         payment_intent = event["data"]["object"]
     return
+
+@payment_router.get('/get-balance')
+async def user_balance(
+    db: AsyncDB,
+    current_user = Depends(get_current_user)
+):
+    balance = get_user_balance(current_user.id, db)
+    return balance

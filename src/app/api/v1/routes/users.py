@@ -1,7 +1,31 @@
+from fastapi import Depends
+from datetime import timedelta
+from loguru import logger
+from authlib.integrations.starlette_client import OAuth, OAuthError
+from fastapi import APIRouter, Request, HTTPException, Response
+from fastapi.responses import RedirectResponse
+from starlette.config import Config
+from app.schemas.users import UserAPIKey
+from app.dependencies.db import AsyncDB
+from app.core.users import (
+    get_current_user,
+    list_user_api_keys,
+    get_user_by_api_key,
+)
+import msgspec
+from typing import List
+
+user_router = APIRouter(
+    prefix="/user", 
+    tags=["Users"]
+)
+
+
 async def create_user():
     pass
 
 
+@user_router.get("/")
 async def read_user():
     pass
 
@@ -12,3 +36,19 @@ async def update_user():
 
 async def delete_user():
     pass
+
+
+@user_router.get("/api-keys", response_model=List[UserAPIKey])
+async def list_current_user_api_keys(
+    db: AsyncDB,
+    current_user = Depends(get_current_user)
+):
+    user_api_keys = await list_user_api_keys(current_user.id, db)
+    return msgspec.to_builtins(user_api_keys)
+
+
+# @user_router.get("/")
+# async def get_current_user_by_api_key(
+#     curren_user
+# ):
+#     return
