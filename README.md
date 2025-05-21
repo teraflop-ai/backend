@@ -46,6 +46,44 @@ CREATE TABLE IF NOT EXISTS users (
     picture_url TEXT
 );
 ```
+Create User API keys Table
+```bash
+CREATE TABLE IF NOT EXISTS user_api_keys (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    name VARCHAR(255),
+    hashed_key VARCHAR(255) UNIQUE NOT NULL,
+    key_prefix VARCHAR(255),
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE,
+
+    CONSTRAINT fk_user
+        FOREIGN KEY(user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE 
+);
+```
+Create User Balance Table
+```bash
+CREATE TABLE IF NOT EXISTS user_balance (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER UNIQUE NOT NULL,
+    balance DECIMAL(19, 4) NOT NULL DEFAULT 0.0000,
+    created_at TIMESTAMP WITH TIME ZONE,
+
+    CONSTRAINT fk_user
+        FOREIGN KEY(user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE  
+);
+```
+Creat Models Table
+```bash
+CREATE TABLE IF NOT EXISTS models (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) UNIQUE NOT NULL
+);
+```
 List tables
 ```bash
 \dt

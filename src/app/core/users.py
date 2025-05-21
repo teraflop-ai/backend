@@ -15,7 +15,7 @@ SECRET_KEY = SESSION_SECRET_KEY.secretValue
 ALGORITHM = "HS256"
 API_KEY_NAME = "X-API-Key"
 api_key_header_scheme = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
-
+hasher = PasswordHash.recommended()
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
@@ -36,7 +36,7 @@ async def create_user(user: dict, db: AsyncDB):
             """
             INSERT INTO users (email, full_name, google_id, picture_url)
             VALUES ($1, $2, $3, $4)
-            RETURNING *
+            RETURNING *;
             """,
             user.get("email"),
             user.get("name"),
@@ -180,7 +180,7 @@ async def get_current_user(request: Request, db: AsyncDB) -> User:
         raise HTTPException(status_code=500, detail="Could not retrieve user data.")
 
 
-async def delete_current_user(
+async def delete_user(
     user_id,
     db: AsyncDB,
 ):
@@ -191,7 +191,7 @@ async def delete_current_user(
             """
             DELETE FROM users
             WHERE user_id
-            RETURNING *
+            RETURNING *;
             """,
             user_id,
         )
@@ -207,34 +207,37 @@ async def delete_current_user(
         
 
 def generate_api_key():
-    api_key = "tf_" + token_urlsafe(32)
-    return api_key
+    secret = token_urlsafe(32)
+    prefix = "tf_"
+    api_key = f"{prefix}{secret}"
+    return api_key, secret, prefix   
 
+def hash_api_key(api_key):
+    return hasher.hash(api_key)
 
-async def create_user_api_key(user, db: AsyncDB):
-    """
-    """
+def verify_api_key(api_key):
+    return hasher.verify(api_key)
 
-    # need to encrypt api key before storage
-
-    random_api_key = generate_api_key()
+async def create_user_api_key(user_id, db: AsyncDB):
+    api_key, secret, key_prefix = generate_api_key()
+    hashed_api_key = hash_api_key(secret)
     try:
-        user_api_key = await db.fetchrow(
+        record = await db.fetchrow(
             """
-            INSERT INTO user_api_keys (api_key)
-            VALUE = ($1)
-            RETURNING *
+            INSERT INTO user_api_keys (api_key, user_id, key_prefix)
+            VALUES ($1, $2, $3)
+            RETURNING *;
             """,
-            random_api_key
+            hashed_api_key,
+            user_id,
+            key_prefix
         )
-        if user_api_key:
-            logger.info()
-            return
+        if record:
+            logger.info(f"Created user api key: {api_key}")
+            return {'api_key': api_key, 'record': record}
         else:
-            logger.error()
-            raise
+            raise Exception("Failed to create user api key")
     except Exception as e:
-        logger.error()
         raise
 
 
@@ -242,12 +245,12 @@ async def delete_user_api_key(user_id: int, db: AsyncDB):
     try:
         user_api_key = await db.fetchrow(
             """
-            
-            FROM user_api_keys
-            WHERE 
+            DELETE FROM user_api_keys
+            WHERE user_id = $1
             """,
             user_id,
         )
+        return 
     except:
         raise
 

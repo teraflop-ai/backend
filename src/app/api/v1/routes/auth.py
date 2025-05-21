@@ -2,6 +2,7 @@ from fastapi import Depends
 from datetime import timedelta
 from loguru import logger
 from authlib.integrations.starlette_client import OAuth, OAuthError
+from authlib.common.security import generate_token
 from fastapi import APIRouter, Request, HTTPException, Response
 from fastapi.responses import RedirectResponse
 from starlette.config import Config
@@ -41,7 +42,14 @@ oauth.register(
 @auth_router.get("/login/google")
 async def login_google(request: Request):
     redirect_uri = FASTAPI_BACKEND_URL + "/auth/"
-    return await oauth.google.authorize_redirect(request, redirect_uri)
+    code_verifier = generate_token(48)
+    request.session["code_verifier"] = code_verifier
+    return await oauth.google.authorize_redirect(
+        request, 
+        redirect_uri,
+        code_challenge_method="S256",
+        code_verifier=code_verifier
+    )
 
 
 @auth_router.get("/logout")
@@ -54,17 +62,27 @@ async def logout(response: Response):
         path="/",
         # domain=".yourdomain.com"
     )
+    logger.info("Successfully logged out")
     return RedirectResponse(url="/")
 
 
 @auth_router.get("/auth")
-async def auth_google(request: Request, db: AsyncDB):
+async def auth_google_callback(request: Request, db: AsyncDB):
+    logger.info(request.session)
     # await google access token
     try:
+        code_verifier = request.session.get("code_verifier")
+        if not code_verifier:
+            logger.error("Code verifier not found in session")
+            return RedirectResponse(url=f'{NEXTJS_FRONTEND_URL}/login?error=missing_verifier')
+
         token = await oauth.google.authorize_access_token(request)
     except OAuthError as e:
-        logger.error("Unable to find get access token")
-        return HTTPException()
+        logger.error(f"OAuth error during callback: {str(e)}")
+        return RedirectResponse(url=f'{NEXTJS_FRONTEND_URL}/login?error={str(e)}')
+
+    # clean up coder verifier data
+    request.session.pop("code_verifier", None)
 
     # get user info from token
     user_info = token.get("userinfo")

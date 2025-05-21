@@ -46,6 +46,13 @@ async def list_current_user_api_keys(
     user_api_keys = await list_user_api_keys(current_user.id, db)
     return msgspec.to_builtins(user_api_keys)
 
+@user_router.get("/")
+async def create_current_user_api_key(
+    db: AsyncDB,
+    current_user = Depends(get_current_user)
+):
+    
+    return
 
 # @user_router.get("/")
 # async def get_current_user_by_api_key(
