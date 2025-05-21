@@ -39,7 +39,7 @@ oauth.register(
 )
 
 
-@auth_router.get("/login/google")
+@auth_router.get("/login/google", tags=["Authentication"])
 async def login_google(request: Request):
     redirect_uri = FASTAPI_BACKEND_URL + "/auth/"
     code_verifier = generate_token(48)
@@ -52,7 +52,7 @@ async def login_google(request: Request):
     )
 
 
-@auth_router.get("/logout")
+@auth_router.get("/logout", tags=["Authentication"])
 async def logout(response: Response):
     response.delete_cookie(
         key="access_token",
@@ -66,7 +66,7 @@ async def logout(response: Response):
     return RedirectResponse(url="/")
 
 
-@auth_router.get("/auth")
+@auth_router.get("/auth", tags=["Authentication"])
 async def auth_google_callback(request: Request, db: AsyncDB):
     logger.info(request.session)
     # await google access token
@@ -132,6 +132,3 @@ async def auth_google_callback(request: Request, db: AsyncDB):
     return response
 
 
-@auth_router.get("/users/me")
-async def user_me(current_user = Depends(get_current_user)):
-    return msgspec.to_builtins(current_user)

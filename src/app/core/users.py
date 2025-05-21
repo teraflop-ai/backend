@@ -218,7 +218,7 @@ def hash_api_key(api_key):
 def verify_api_key(api_key):
     return hasher.verify(api_key)
 
-async def create_user_api_key(user_id, db: AsyncDB):
+async def create_user_api_key(user_id: int, db: AsyncDB):
     api_key, secret, key_prefix = generate_api_key()
     hashed_api_key = hash_api_key(secret)
     try:
@@ -233,7 +233,7 @@ async def create_user_api_key(user_id, db: AsyncDB):
             key_prefix
         )
         if record:
-            logger.info(f"Created user api key: {api_key}")
+            logger.info(f"Created user: {record} api key: {api_key}")
             return {'api_key': api_key, 'record': record}
         else:
             raise Exception("Failed to create user api key")

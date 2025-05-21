@@ -21,23 +21,23 @@ Connect to psql console with super user
 sudo -u postgres psql
 ```
 Create role
-```bash
+```sql
 CREATE ROLE username LOGIN CREATEDB;
 ```
 Change password
-```
+```sql
 ALTER USER username PASSWORD "password";
 ```
 Create db
-```bash
+```sql
 create mydb
 ```
 Drop db
-```bash
+```sql
 dropdb mydb
 ```
 Create Users Table
-```bash
+```sql
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     google_id VARCHAR(255) UNIQUE,
@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS users (
 );
 ```
 Create User API keys Table
-```bash
+```sql
 CREATE TABLE IF NOT EXISTS user_api_keys (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL,
@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS user_api_keys (
 );
 ```
 Create User Balance Table
-```bash
+```sql
 CREATE TABLE IF NOT EXISTS user_balance (
     id SERIAL PRIMARY KEY,
     user_id INTEGER UNIQUE NOT NULL,
@@ -78,23 +78,31 @@ CREATE TABLE IF NOT EXISTS user_balance (
 );
 ```
 Creat Models Table
-```bash
+```sql
 CREATE TABLE IF NOT EXISTS models (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) UNIQUE NOT NULL
 );
 ```
 List tables
-```bash
+```sql
 \dt
 ```
 Rename table column
+```sql
+ALTER TABLE table_name RENAME COLUMN column_name to new_name;
 ```
-ALTER TABLE table_name RENAME COLUMN name to new_name;
+Add table column
+```sql
+ALTER TABLE table_name ADD column_name varchar(255);
 ```
 Drop table column
+```sql
+ALTER TABLE table_name DROP COLUMN column_name;
 ```
-ALTER TABLE table_name DROP COLUMN name;
+Change column type
+```sql
+ALTER TABLE table_name ALTER COLUMN column_name TYPE varchar(255);
 ```
 
 # Fastapi
