@@ -101,7 +101,7 @@ async def get_user_by_google_id(google_id, db: AsyncDB):
         raise
 
 
-async def get_user_by_id(user_id, db: AsyncDB):
+async def get_user_by_id(user_id: int, db: AsyncDB):
     """
     """
     try:
@@ -181,7 +181,7 @@ async def get_current_user(request: Request, db: AsyncDB) -> User:
 
 
 async def delete_user(
-    user_id,
+    user_id: int,
     db: AsyncDB,
 ):
     """
@@ -253,21 +253,6 @@ async def delete_user_api_key(user_id: int, db: AsyncDB):
         return 
     except:
         raise
-
-
-# async def user_from_api_key(
-#     apikey,
-#     db: AsyncDB
-# ):
-#     try:
-#         current_user = db.fetchrow(
-#             """
-
-#             """,
-#             apikey,
-#         )
-#     except:
-#         raise
 
 async def list_user_api_keys(user_id: int, db: AsyncDB):
     try:

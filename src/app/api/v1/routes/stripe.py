@@ -114,5 +114,6 @@ async def user_balance(
     db: AsyncDB,
     current_user = Depends(get_current_user)
 ):
-    balance = get_user_balance(current_user.id, db)
+    balance = await get_user_balance(current_user.id, db)
+    print(balance)
     return balance

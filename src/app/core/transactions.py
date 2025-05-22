@@ -37,16 +37,22 @@ async def decrement_user_balance(amount, user_email, db: AsyncDB):
             user_email,
         )
 
-async def get_user_balance(user_id, db: AsyncDB):
+async def get_user_balance(user_id: int, db: AsyncDB):
     try:
-        user_balance = db.fetchval(
+        user_balance = await db.fetchval(
             """
             SELECT balance
             FROM user_balance
-            WHERE id = $1
+            WHERE user_id = $1
             """,
             user_id
         )
-        return user_balance
+        if user_balance:
+            logger.info(f"User balance: {user_balance}")
+            return user_balance
+        else:
+            logger.error("User balance not found")
+            return None
     except:
+        logger.error("failed to get user balance")
         raise
