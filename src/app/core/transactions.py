@@ -42,7 +42,7 @@ async def get_user_balance(user_id: int, db: AsyncDB):
         user_balance = await db.fetchval(
             """
             SELECT balance
-            FROM user_balance
+            FROM public.user_balance
             WHERE user_id = $1
             """,
             user_id
@@ -52,7 +52,7 @@ async def get_user_balance(user_id: int, db: AsyncDB):
             return user_balance
         else:
             logger.error("User balance not found")
-            return None
+            return {"balance": "not found"}
     except:
         logger.error("failed to get user balance")
         raise

@@ -3,7 +3,7 @@ from collections.abc import AsyncGenerator
 from app.infisical.infisical import SUPABASE_URL
 from typing import Optional
 
-local= True
+local = False
 
 db_url: str = SUPABASE_URL.secretValue
 

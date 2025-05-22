@@ -10,7 +10,6 @@ from slowapi.util import get_remote_address
 from fastapi import APIRouter, Depends, Request, HTTPException, Header
 from fastapi.responses import RedirectResponse
 import decimal
-
 from app.core.transactions import (
     increment_user_balance, 
     get_user_balance

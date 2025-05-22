@@ -180,24 +180,21 @@ async def get_current_user(request: Request, db: AsyncDB) -> User:
         raise HTTPException(status_code=500, detail="Could not retrieve user data.")
 
 
-async def delete_user(
-    user_id: int,
-    db: AsyncDB,
-):
+async def delete_user(user_id: int, db: AsyncDB):
     """
     """
     try:
         deleted_user = await db.fetchrow(
             """
             DELETE FROM users
-            WHERE user_id
+            WHERE id = $1
             RETURNING *;
             """,
             user_id,
         )
         if deleted_user:
             logger.info(f"Successfully deleted user: {deleted_user}")
-            return
+            return deleted_user
         else:
             logger.error("Failed to delete user")
             raise
@@ -250,7 +247,7 @@ async def delete_user_api_key(user_id: int, db: AsyncDB):
             """,
             user_id,
         )
-        return 
+        return user_api_key
     except:
         raise
 

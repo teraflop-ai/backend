@@ -12,6 +12,8 @@ from app.core.users import (
     create_user_api_key,
     list_user_api_keys,
     get_user_by_api_key,
+    delete_user,
+    delete_user_api_key,
 )
 import msgspec
 from typing import List
@@ -34,10 +36,10 @@ async def user_me(current_user = Depends(get_current_user)):
 async def update_user():
     pass
 
-
-async def delete_user():
-    pass
-
+@user_router.delete("/delete")
+async def delete_current_user(db: AsyncDB, current_user=Depends(get_current_user)):
+    deleted_user = await delete_user(current_user.id, db)
+    return deleted_user
 
 @user_router.get("/list-api-keys", response_model=List[UserAPIKey])
 async def list_current_user_api_keys(
