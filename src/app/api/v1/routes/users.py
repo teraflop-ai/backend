@@ -2,7 +2,13 @@ from fastapi import Depends
 from datetime import timedelta
 from loguru import logger
 from authlib.integrations.starlette_client import OAuth, OAuthError
-from fastapi import APIRouter, Request, HTTPException, Response
+from fastapi import (
+    APIRouter,
+    status, 
+    Request, 
+    HTTPException, 
+    Response
+)
 from fastapi.responses import RedirectResponse
 from starlette.config import Config
 from app.schemas.users import UserAPIKey
@@ -15,17 +21,15 @@ from app.core.users import (
     delete_user,
     delete_user_api_key,
 )
+from starlette.status import HTTP_303_SEE_OTHER
 import msgspec
 from typing import List
+from pydantic import BaseModel
 
 user_router = APIRouter(
     prefix="/users", 
     tags=["Users"]
 )
-
-
-async def create_user():
-    pass
 
 
 @user_router.get("/me")
@@ -34,13 +38,20 @@ async def user_me(current_user = Depends(get_current_user)):
     return msgspec.to_builtins(current_user)
 
 
-async def update_user():
-    pass
-
 @user_router.delete("/delete")
-async def delete_current_user(db: AsyncDB, current_user=Depends(get_current_user)):
-    deleted_user = await delete_user(current_user.id, db)
-    return RedirectResponse("/")
+async def delete_current_user(response: Response, db: AsyncDB, current_user=Depends(get_current_user)):
+    await delete_user(current_user.id, db)
+    response.delete_cookie(
+        key="access_token",
+        httponly=True,
+        samesite="lax",
+        secure=False,
+        path="/",
+        # domain=".yourdomain.com"
+    )
+    logger.info("Successfully logged out")
+    return {"message": "User deleted successfully"}
+
 
 @user_router.get("/list-api-keys")
 async def list_current_user_api_keys(
@@ -59,17 +70,29 @@ async def create_current_user_api_key(
     created_api_key = await create_user_api_key(current_user.id, db)
     return msgspec.to_builtins(created_api_key)
 
+class DeleteAPIKeyRequest(BaseModel):
+    api_key_id: str
+
 @user_router.delete("/delete-api-key")
 async def delete_key(
-    request_data, 
+    request: Request, 
     db: AsyncDB,
     current_user = Depends(get_current_user)
 ):
-    logger.info(current_user.id)
-    return await delete_user_api_key(request_data, current_user.id, db)
+    body = await request.json()
+    api_key_id = body.get("request_data")
+    logger.info(f"User {current_user.id} deleting API key: {api_key_id}")
+    result = await delete_user_api_key(api_key_id, current_user.id, db)
+    return
 
 # @user_router.get("/")
 # async def get_current_user_by_api_key(
 #     curren_user
 # ):
 #     return
+
+async def update_user():
+    pass
+
+async def create_user():
+    pass

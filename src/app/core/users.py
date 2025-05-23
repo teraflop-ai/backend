@@ -244,6 +244,7 @@ async def delete_user_api_key(apikey_id: int, user_id: int, db: AsyncDB):
             """
             DELETE FROM user_api_keys
             WHERE id = $1 AND user_id = $2
+            RETURNING id
             """,
             int(apikey_id),
             user_id
