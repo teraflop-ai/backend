@@ -16,15 +16,14 @@ class UserBalance(Struct):
     email: str
     balance: float
 
-class UserAPIKey(BaseModel):
+class UserAPIKey(Struct):
     id: int
     user_id: int
+    hashed_key: str
     key_prefix: str
-    created_at: datetime.datetime
+    created_at: Optional[datetime.datetime] = None
     is_active: bool = True
-    label: Optional[str] = None
-    last_used_at: Optional[datetime.datetime] = None
-    expires_at: Optional[datetime.datetime] = None
+    name: Optional[str] = None
 
 class UserAPIKeyCreate(Struct):
     id: int

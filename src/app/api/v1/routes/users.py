@@ -30,6 +30,7 @@ async def create_user():
 
 @user_router.get("/me")
 async def user_me(current_user = Depends(get_current_user)):
+    logger.info(current_user)
     return msgspec.to_builtins(current_user)
 
 
@@ -39,15 +40,15 @@ async def update_user():
 @user_router.delete("/delete")
 async def delete_current_user(db: AsyncDB, current_user=Depends(get_current_user)):
     deleted_user = await delete_user(current_user.id, db)
-    return deleted_user
+    return RedirectResponse("/")
 
-@user_router.get("/list-api-keys", response_model=List[UserAPIKey])
+@user_router.get("/list-api-keys")
 async def list_current_user_api_keys(
     db: AsyncDB,
     current_user = Depends(get_current_user)
 ):
-    list_user_api_keys = await list_user_api_keys(current_user.id, db)
-    return msgspec.to_builtins(list_user_api_keys)
+    user_api_keys = await list_user_api_keys(current_user.id, db)
+    return msgspec.to_builtins(user_api_keys)
 
 
 @user_router.post("/create-api-key")
@@ -58,6 +59,9 @@ async def create_current_user_api_key(
     created_api_key = await create_user_api_key(current_user.id, db)
     return msgspec.to_builtins(created_api_key)
 
+@user_router.delete("/delete-api-key")
+async def delete_key(db: AsyncDB):
+    pass
 
 # @user_router.get("/")
 # async def get_current_user_by_api_key(

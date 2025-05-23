@@ -221,7 +221,7 @@ async def create_user_api_key(user_id: int, db: AsyncDB):
     try:
         record = await db.fetchrow(
             """
-            INSERT INTO user_api_keys (api_key, user_id, key_prefix)
+            INSERT INTO user_api_keys (hashed_key, user_id, key_prefix)
             VALUES ($1, $2, $3)
             RETURNING *;
             """,
@@ -231,7 +231,7 @@ async def create_user_api_key(user_id: int, db: AsyncDB):
         )
         if record:
             logger.info(f"Created user: {record} api key: {api_key}")
-            return {'api_key': api_key, 'record': record}
+            return {'api_key': api_key, 'record': UserAPIKey(**dict(record))}
         else:
             raise Exception("Failed to create user api key")
     except Exception as e:
@@ -253,7 +253,7 @@ async def delete_user_api_key(user_id: int, db: AsyncDB):
 
 async def list_user_api_keys(user_id: int, db: AsyncDB):
     try:
-        user_api_keys = db.fetch(
+        user_api_keys = await db.fetch(
             """
             SELECT *
             FROM user_api_keys
@@ -261,8 +261,12 @@ async def list_user_api_keys(user_id: int, db: AsyncDB):
             """,
             user_id,
         )
+        print(user_api_keys)
         if user_api_keys:
             logger.info(f"Found user api keys: {user_api_keys}")
             return [UserAPIKey(**dict(key)) for key in user_api_keys]
+        else:
+            logger.info("No api keys found")
+            return None
     except:
         raise

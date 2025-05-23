@@ -52,7 +52,7 @@ async def login_google(request: Request):
     )
 
 
-@auth_router.get("/logout", tags=["Authentication"])
+@auth_router.post("/logout", tags=["Authentication"])
 async def logout(response: Response):
     response.delete_cookie(
         key="access_token",
