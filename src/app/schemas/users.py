@@ -25,15 +25,15 @@ class UserAPIKey(Struct):
     is_active: bool = True
     name: Optional[str] = None
 
-class UserAPIKeyCreate(Struct):
-    id: int
-    user_id: int #Foreign key
-    hashed_api_key: str
-    key_prefix: str
-    created_at: datetime.datetime
-    is_active: bool = True
-    label: Optional[str] = None
-    expires_at: Optional[datetime.datetime] = None
+# class UserAPIKeyCreate(Struct):
+#     id: int
+#     user_id: int #Foreign key
+#     hashed_api_key: str
+#     key_prefix: str
+#     created_at: datetime.datetime
+#     is_active: bool = True
+#     label: Optional[str] = None
+#     expires_at: Optional[datetime.datetime] = None
 
 class Token(Struct):
     access_token: str

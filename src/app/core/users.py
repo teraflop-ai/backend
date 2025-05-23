@@ -238,14 +238,15 @@ async def create_user_api_key(user_id: int, db: AsyncDB):
         raise
 
 
-async def delete_user_api_key(user_id: int, db: AsyncDB):
+async def delete_user_api_key(apikey_id: int, user_id: int, db: AsyncDB):
     try:
         user_api_key = await db.fetchrow(
             """
             DELETE FROM user_api_keys
-            WHERE user_id = $1
+            WHERE id = $1 AND user_id = $2
             """,
-            user_id,
+            int(apikey_id),
+            user_id
         )
         return user_api_key
     except:

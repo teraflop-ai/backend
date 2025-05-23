@@ -60,8 +60,13 @@ async def create_current_user_api_key(
     return msgspec.to_builtins(created_api_key)
 
 @user_router.delete("/delete-api-key")
-async def delete_key(db: AsyncDB):
-    pass
+async def delete_key(
+    request_data, 
+    db: AsyncDB,
+    current_user = Depends(get_current_user)
+):
+    logger.info(current_user.id)
+    return await delete_user_api_key(request_data, current_user.id, db)
 
 # @user_router.get("/")
 # async def get_current_user_by_api_key(
