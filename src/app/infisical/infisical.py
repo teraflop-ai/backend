@@ -34,19 +34,19 @@ SESSION_SECRET_KEY = client.secrets.get_secret_by_name(
     secret_path="/",
 )
 
-# STRIPE_SECRET_KEY = client.secrets.get_secret_by_name(
-#     secret_name="STRIPE_SECRET_KEY",
-#     project_id=INFISICAL_PROJECT_ID,
-#     environment_slug="dev",
-#     secret_path="/",
-# )
+STRIPE_SECRET_KEY = client.secrets.get_secret_by_name(
+    secret_name="STRIPE_SECRET_KEY",
+    project_id=INFISICAL_PROJECT_ID,
+    environment_slug="dev",
+    secret_path="/",
+)
 
-# STRIPE_PUBLISHABLE_KEY = client.secrets.get_secret_by_name(
-#     secret_name="STRIPE_PUBLISHABLE_KEY",
-#     project_id=INFISICAL_PROJECT_ID,
-#     environment_slug="dev",
-#     secret_path="/",
-# )
+STRIPE_PUBLISHABLE_KEY = client.secrets.get_secret_by_name(
+    secret_name="STRIPE_PUBLISHABLE_KEY",
+    project_id=INFISICAL_PROJECT_ID,
+    environment_slug="dev",
+    secret_path="/",
+)
 
 STRIPE_WEBHOOK_SECRET = client.secrets.get_secret_by_name(
     secret_name="STRIPE_WEBHOOK_SECRET",

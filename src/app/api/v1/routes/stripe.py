@@ -2,12 +2,17 @@ import stripe
 from typing import Optional
 from stripe import checkout
 from app.infisical.infisical import (
-    # STRIPE_SECRET_KEY,
-    # STRIPE_PUBLISHABLE_KEY,
+    STRIPE_SECRET_KEY,
+    STRIPE_PUBLISHABLE_KEY,
     STRIPE_WEBHOOK_SECRET,
 )
-from slowapi.util import get_remote_address
-from fastapi import APIRouter, Depends, Request, HTTPException, Header
+from fastapi import (
+    APIRouter, 
+    Depends, 
+    Request, 
+    HTTPException, 
+    Header
+)
 from fastapi.responses import RedirectResponse
 import decimal
 from app.core.transactions import (
@@ -19,37 +24,42 @@ from loguru import logger
 from app.core.users import get_current_user
 from app.schemas.users import User
 
-domain_prefix = "http://localhost:127.0.0.1:8000"
+domain_prefix = "http://localhost:3000"
 
 payment_router = APIRouter(prefix="/payments", tags=["Payments"])
 
 
 @payment_router.post("/create-checkout-session")
-def create_checkout_session(
-    request: Request,
+async def create_checkout_session(
+    # request: Request,
     current_user: User = Depends(get_current_user)
 ):
+    stripe.api_key = STRIPE_SECRET_KEY.secretValue
+    # body = await request.json()
+    # amount = body.get("amount")
     try:
-        amount_cents = int(request * 100)
-        if amount_cents < 0:
-            logger.error("Error")
-            raise
+        # amount_cents = int(amount * 100)
+        # if amount_cents < 0:
+        #     logger.error("Error")
+        #     raise
         
         checkout_session = checkout.Session.create(
             line_items=[
                 {
-                    "price_data": {
-                        "currency": "usd",
-                        "product_data": {
-                            "name": "API Credits",
-                            "description": "",
-                        },
-                        "unit_amount": amount_cents,
-                    },
+                    "price": "",
+                    # "price_data": {
+                    #     "currency": "usd",
+                    #     "product_data": {
+                    #         "name": "API Credits",
+                    #         "description": "API credits",
+                    #     },
+                    #     "unit_amount": 1000,
+                    # },
+                    
                     "quantity": 1,
                 }
             ],
-            success_url=domain_prefix + "/payment-success?session_id={{}}",
+            success_url=domain_prefix + "/payment-success?session_id={CHECKOUT_SESSION_ID}",
             cancel_url=domain_prefix + "/payment-cancelled",
             mode="payment",
             automatic_tax={
@@ -57,10 +67,12 @@ def create_checkout_session(
             },
             metadata={
                 "user_email": current_user.email,
-                "amount": str(request.get(""))
+                "user_id": str(current_user.id),
+                # "amount": str(amount)
             }
         )
-        return RedirectResponse(checkout_session.url)
+        logger.info(checkout_session.url)
+        return {"checkout_url": checkout_session.url}
     except Exception as e:
         return HTTPException(403)
 
@@ -93,7 +105,7 @@ async def webhook_recieved(
         if session.get("payment_status") == "paid":
             try:
                 # Update user balance in the db
-                update_user_balance = increment_user_balance(
+                update_user_balance = await increment_user_balance(
                     amount, user_email, db
                 )
                 if update_user_balance:
