@@ -16,13 +16,13 @@ async def increment_user_balance(amount, user_email, db: AsyncDB):
                 user_email,
             )
             if user_transaction:
-                logger.info("Success")
+                logger.info("Incremented user balance")
                 return UserBalance(**dict(user_transaction))
             else:
                 logger.warning("Warning")
                 return None
     except Exception as e:
-        logger.error("error")
+        logger.error("Failed to increment user balance")
         raise
 
 async def decrement_user_balance(amount, user_email, db: AsyncDB):

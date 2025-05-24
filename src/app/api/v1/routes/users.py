@@ -21,10 +21,9 @@ from app.core.users import (
     delete_user,
     delete_user_api_key,
 )
-from starlette.status import HTTP_303_SEE_OTHER
 import msgspec
 from typing import List
-from pydantic import BaseModel
+
 
 user_router = APIRouter(
     prefix="/users", 
@@ -64,14 +63,16 @@ async def list_current_user_api_keys(
 
 @user_router.post("/create-api-key")
 async def create_current_user_api_key(
+    request: Request,
     db: AsyncDB,
     current_user = Depends(get_current_user)
 ):
-    created_api_key = await create_user_api_key(current_user.id, db)
+    body = await request.json()
+    api_key_name = body.get("name")
+    logger.info(f"API key name {api_key_name}")
+    created_api_key = await create_user_api_key(api_key_name, current_user.id, db)
     return msgspec.to_builtins(created_api_key)
 
-class DeleteAPIKeyRequest(BaseModel):
-    api_key_id: str
 
 @user_router.delete("/delete-api-key")
 async def delete_key(
@@ -80,10 +81,9 @@ async def delete_key(
     current_user = Depends(get_current_user)
 ):
     body = await request.json()
-    api_key_id = body.get("request_data")
+    api_key_id = body.get("api_key_id")
     logger.info(f"User {current_user.id} deleting API key: {api_key_id}")
-    result = await delete_user_api_key(api_key_id, current_user.id, db)
-    return
+    return await delete_user_api_key(api_key_id, current_user.id, db)
 
 # @user_router.get("/")
 # async def get_current_user_by_api_key(

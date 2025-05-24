@@ -127,16 +127,18 @@ async def get_user_by_id(user_id: int, db: AsyncDB):
 async def get_user_by_api_key(api_key: str, db: AsyncDB):
     """
     """
+    match_hashed_key = verify_api_key(api_key)
     try:
         user_by_api_key = await db.fetchrow(
             """
             SELECT *
             FROM users
-            WHERE user_api_key = $1
+            WHERE hashed_key = $1
             """,
-            api_key,
+            match_hashed_key,
         )
         if user_by_api_key:
+            logger.info("User found from api key")
             return User(**dict(user_by_api_key))
         else:
             logger.info()
@@ -215,19 +217,20 @@ def hash_api_key(api_key):
 def verify_api_key(api_key):
     return hasher.verify(api_key)
 
-async def create_user_api_key(user_id: int, db: AsyncDB):
+async def create_user_api_key(api_key_name, user_id: int, db: AsyncDB):
     api_key, secret, key_prefix = generate_api_key()
     hashed_api_key = hash_api_key(secret)
     try:
         record = await db.fetchrow(
             """
-            INSERT INTO user_api_keys (hashed_key, user_id, key_prefix)
-            VALUES ($1, $2, $3)
+            INSERT INTO user_api_keys (name, hashed_key, user_id, key_prefix)
+            VALUES ($1, $2, $3, $4)
             RETURNING *;
             """,
+            api_key_name,
             hashed_api_key,
             user_id,
-            key_prefix
+            key_prefix,
         )
         if record:
             logger.info(f"Created user: {record} api key: {api_key}")

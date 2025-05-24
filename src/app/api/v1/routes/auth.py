@@ -10,7 +10,6 @@ from app.infisical.infisical import GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
 from app.dependencies.db import AsyncDB
 from app.core.users import (
     get_user_by_email,
-    get_current_user,
     create_user,
     create_access_token,
 )

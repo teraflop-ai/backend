@@ -11,14 +11,14 @@ from app.core.inference import Baseten
 embedding_router = APIRouter()
 
 
-@embedding_router.post("embed_text", response_model=EmbeddingResponse, dependencies=[])
+@embedding_router.post("embed_text", response_model=EmbeddingResponse)
 async def embed_text(
     input_text: TextInput,
     api_key: str,
     db: AsyncDB,
 ):
     user_id = get_user_by_api_key(api_key, db)
-    decrement_user_balance(amount, user_id, db)
+    await decrement_user_balance(amount, user_id, db)
 
     return EmbeddingResponse(embedding=embedding[0].tolist())
 
