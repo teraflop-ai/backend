@@ -38,44 +38,25 @@ payment_router = APIRouter(prefix="/payments", tags=["Payments"])
 
 @payment_router.post("/create-checkout-session")
 async def create_checkout_session(
-    # request: Request,
     current_user: User = Depends(get_current_user)
 ):
     stripe.api_key = STRIPE_SECRET_KEY.secretValue
-    # body = await request.json()
-    # amount = body.get("amount")
     try:
-        # amount_cents = int(amount * 100)
-        # if amount_cents < 0:
-        #     logger.error("Error")
-        #     raise
-        
         checkout_session = checkout.Session.create(
             line_items=[
                 {
-                    "price": f"{stripe_price_id}",
-                    # "price_data": {
-                    #     "currency": "usd",
-                    #     "product_data": {
-                    #         "name": "API Credits",
-                    #         "description": "API credits",
-                    #     },
-                    #     "unit_amount": 1000,
-                    # },
-                    
+                    "price": stripe_price_id,
                     "quantity": 1,
                 }
             ],
-            success_url=domain_prefix + "/payment-success?session_id={CHECKOUT_SESSION_ID}",
+            success_url=domain_prefix + "/dashboard/billing", #+ "/payment-success?session_id={CHECKOUT_SESSION_ID}",
             cancel_url=domain_prefix + "/payment-cancelled",
             mode="payment",
             automatic_tax={
                 "enabled": True
             },
             metadata={
-                "user_email": current_user.email,
                 "user_id": str(current_user.id),
-                # "amount": str(amount)
             }
         )
         logger.info(checkout_session.url)
@@ -86,12 +67,11 @@ async def create_checkout_session(
 
 @payment_router.post("/webhook")
 async def webhook_recieved(
-    request_data: Request,
+    request: Request,
     db: AsyncDB,
     stripe_signature: Optional[str] = Header(None),
 ):
-    payload = await request_data.body()
-
+    payload = await request.body()
     try:
         event = stripe.Webhook.construct_event(
             payload=payload, 
@@ -105,15 +85,21 @@ async def webhook_recieved(
     if event["type"] == "checkout.session.completed":
         session = event['data']['object']
 
+        logger.info(f"Session data: {session}")
+
         metadata = session.get("metadata")
-        user_email = metadata.get("user_email")
-        amount = metadata.get("amount")
+        logger.info(f"Metadata: {metadata}")
+        user_id = metadata.get("user_id")
+        amount_cents = session.get("amount_total")
+        amount_dollars = decimal.Decimal(amount_cents) / decimal.Decimal('100')
+        logger.info(f"Amount to add: {amount_dollars}")
 
         if session.get("payment_status") == "paid":
             try:
-                # Update user balance in the db
                 update_user_balance = await increment_user_balance(
-                    amount, user_email, db
+                    amount_dollars, 
+                    user_id, 
+                    db
                 )
                 if update_user_balance:
                     logger.info("User balance updated")
@@ -125,7 +111,8 @@ async def webhook_recieved(
 
     elif event["type"] == "payment_intent.succeeded":
         payment_intent = event["data"]["object"]
-    return
+    return {"status": "success"}
+
 
 @payment_router.get('/get-balance')
 async def user_balance(
@@ -133,5 +120,5 @@ async def user_balance(
     current_user = Depends(get_current_user)
 ):
     balance = await get_user_balance(current_user.id, db)
-    print(balance)
+    logger.info(balance)
     return balance

@@ -45,6 +45,19 @@ async def create_user(user: dict, db: AsyncDB):
         )
         if user_record:
             logger.info(f"Created user: {user_record}")
+            user_record_dict = dict(user_record)
+            user_id = user_record_dict.get('id')
+            initial_balance = 0.0
+            balance_record = await db.fetchrow(
+                """
+                INSERT INTO user_balance (user_id, balance, created_at)
+                VALUES ($1, $2, CURRENT_TIMESTAMP)
+                RETURNING *
+                """,
+                user_id,
+                initial_balance,
+            )
+            logger.info(f"Created balance for user: {balance_record}")
             return User(**dict(user_record))
         else:
             logger.error("Failed to create user")
