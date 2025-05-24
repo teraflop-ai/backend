@@ -23,6 +23,13 @@ from app.dependencies.db import AsyncDB
 from loguru import logger
 from app.core.users import get_current_user
 from app.schemas.users import User
+import os
+from dotenv_vault import load_dotenv
+
+
+load_dotenv()
+
+stripe_price_id = os.getenv("STRIPE_PRICE_ID")
 
 domain_prefix = "http://localhost:3000"
 
@@ -46,7 +53,7 @@ async def create_checkout_session(
         checkout_session = checkout.Session.create(
             line_items=[
                 {
-                    "price": "",
+                    "price": f"{stripe_price_id}",
                     # "price_data": {
                     #     "currency": "usd",
                     #     "product_data": {
