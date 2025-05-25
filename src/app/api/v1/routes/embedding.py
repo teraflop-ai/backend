@@ -1,38 +1,80 @@
-import batched
-from sentence_transformers import SentenceTransformer
 from app.schemas.embedding import TextInput, EmbeddingResponse
-from fastapi import APIRouter, Depends, Request, HTTPException, Header
+from fastapi import (
+    APIRouter, 
+    HTTPException, 
+    Header
+)
 from app.dependencies.db import AsyncDB
 import decimal
-from app.core.transactions import decrement_user_balance
+from app.core.transactions import (
+    decrement_user_balance,
+    get_user_balance,
+)
 from app.core.users import get_user_by_api_key
-from app.core.inference import Baseten
+from loguru import logger
+from flash_tokenizer import BertTokenizerFlash
 
 embedding_router = APIRouter()
 
-tokenizer = "MY_TOKENIZER"
+MODEL_CONFIG = {
+    'bert-base-multilingual-cased': {
+        "tokenizer": 'bert-base-multilingual-cased',
+        "cost_per_1m_tokens": decimal.Decimal("0.18"),
+        "model_class": "openai"
+    },
+}
 
-def count_tokens(text: str) -> int:
-    return len(tokenizer.encode(text))
+@embedding_router.post("/embeddings")
+async def embed_text(
+    request: TextInput,
+    db: AsyncDB,
+    authorization: str = Header(...),
+):
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid authorization header")
+    
+    api_key = authorization.replace("Bearer ", "")
 
-def calculate_embedding_cost(token_count: int) -> decimal.Decimal:
-    "Calculate cost based on $0.18 per 1M tokens."
-    cost_per_million_tokens = decimal.Decimal("0.18")
+    user_id = await get_user_by_api_key(api_key, db)
+    logger.info(f"User: {user_id}")
+    user_balance = await get_user_balance(user_id["user_id"], db)
+    logger.info(f"User balance: {user_balance}")
+    if user_balance["balance"] < 0:
+        raise
+    token_count = count_tokens(request.input, request.model)
+    logger.info(f"Num tokens: {token_count}")
+    amount = calculate_embedding_cost(token_count, request.model)
+    logger.info(f"Amount to deduct {amount}")
+    await decrement_user_balance(amount, user_id["user_id"], db)
+
+    return EmbeddingResponse(
+        embedding=[0.1, 0.2, 0.3],  # Will be filled when you add actual embedding logic
+        model=request.model,
+        usage={
+            "prompt_tokens": token_count,
+            "total_tokens": token_count
+        }
+    )
+
+def count_tokens(text: str, model_name) -> int:
+    tokenizer = get_tokenizer(model_name)
+    return len(tokenizer.tokenize(text))
+
+def calculate_embedding_cost(token_count: int, model_name: str) -> decimal.Decimal:
+    """Calculate cost based on token count and model."""
+    config = MODEL_CONFIG.get(model_name)
+    if not config:
+        raise ValueError(f"Unsupported model: {model_name}")
+        
+    cost_per_million_tokens = config["cost_per_1m_tokens"]
     return (decimal.Decimal(str(token_count)) / decimal.Decimal("1000000")) * cost_per_million_tokens
 
-
-@embedding_router.post("embed_text", response_model=EmbeddingResponse)
-async def embed_text(
-    input_text: TextInput,
-    api_key: str,
-    db: AsyncDB,
-):
-    num_tokens = count_tokens(input_text)
-    user_id = get_user_by_api_key(api_key, db)
-    await decrement_user_balance(amount, user_id.id, db)
-
-    return EmbeddingResponse(embedding=embedding[0].tolist())
-
+def get_tokenizer(model_name: str):
+    """Get tokenizer for the specified model."""
+    config = MODEL_CONFIG.get(model_name)
+    if not config:
+        raise ValueError(f"Unsupported model: {model_name}")
+    return BertTokenizerFlash.from_pretrained(config["tokenizer"])
 
 def baseten_embed(model_id, payload):
     pass

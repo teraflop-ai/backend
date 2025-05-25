@@ -43,7 +43,8 @@ CREATE TABLE IF NOT EXISTS users (
     google_id VARCHAR(255) UNIQUE,
     email VARCHAR(255) UNIQUE NOT NULL,
     full_name VARCHAR(255),
-    picture_url TEXT
+    picture_url TEXT,
+    created_at TIMESTAMP WITH TIME ZONE
 );
 ```
 Create User API keys Table
@@ -68,7 +69,7 @@ Create User Balance Table
 CREATE TABLE IF NOT EXISTS user_balance (
     id SERIAL PRIMARY KEY,
     user_id INTEGER UNIQUE NOT NULL,
-    balance DECIMAL(19, 4) NOT NULL DEFAULT 0.0000,
+    balance DECIMAL(19, 6) NOT NULL DEFAULT 0.0000,
     created_at TIMESTAMP WITH TIME ZONE,
 
     CONSTRAINT fk_user
@@ -81,9 +82,22 @@ Create User Transactions Table
 ```sql
 CREATE TABLE IF NOT EXISTS user_transactions (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER UNIQUE NOT NULL,
+    user_id INTEGER NOT NULL,
     invoice_amount DECIMAL(19, 4) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE,
+
+    CONSTRAINT fk_user
+        FOREIGN KEY(user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+)
+```
+Create User Subscriptions Table
+```sql
+CREATE TABLE IF NOT EXISTS user_subscriptions (
+    id SERIAL PRIMARY KEY
+    user_id INTERGER UNIQUE NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
 )
 ```
 Create Models Table
@@ -119,4 +133,14 @@ ALTER TABLE table_name ALTER COLUMN column_name TYPE varchar(255);
 Start Fastapi server
 ```
 uv run fastapi dev  ../backend/src/app/main.py
+```
+
+# Development dependencies
+
+```
+minio
+batched
+truss
+sentence-transformers
+pytest-playwright
 ```

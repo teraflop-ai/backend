@@ -18,7 +18,7 @@ import msgspec
 FASTAPI_BACKEND_URL="http://localhost:8000"
 NEXTJS_FRONTEND_URL="http://localhost:3000"
 
-ACCESS_TOKEN_EXPIRE_MINUTES = 15
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 auth_router = APIRouter()
 

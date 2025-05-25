@@ -20,6 +20,7 @@ class UserAPIKey(Struct):
     id: int
     user_id: int
     hashed_key: str
+    lookup_hash: str
     key_prefix: str
     created_at: Optional[datetime.datetime] = None
     is_active: bool = True

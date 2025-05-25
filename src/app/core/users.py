@@ -9,6 +9,7 @@ from loguru import logger
 from secrets import token_urlsafe
 from app.schemas.users import User, UserAPIKey
 from app.infisical.infisical import SESSION_SECRET_KEY
+import hashlib
 from pwdlib import PasswordHash
 
 SECRET_KEY = SESSION_SECRET_KEY.secretValue
@@ -137,30 +138,6 @@ async def get_user_by_id(user_id: int, db: AsyncDB):
         raise
 
 
-async def get_user_by_api_key(api_key: str, db: AsyncDB):
-    """
-    """
-    match_hashed_key = verify_api_key(api_key)
-    try:
-        user_by_api_key = await db.fetchrow(
-            """
-            SELECT *
-            FROM users
-            WHERE hashed_key = $1
-            """,
-            match_hashed_key,
-        )
-        if user_by_api_key:
-            logger.info("User found from api key")
-            return User(**dict(user_by_api_key))
-        else:
-            logger.info()
-            raise Exception()
-    except Exception as e:
-        logger.info()
-        raise
-
-
 async def get_current_user(request: Request, db: AsyncDB) -> User:
     """
     """
@@ -218,29 +195,61 @@ async def delete_user(user_id: int, db: AsyncDB):
         raise
         
 
+
+async def get_user_by_api_key(api_key: str, db: AsyncDB):
+    """
+    """
+    lookup_hash = hashlib.sha256(api_key.encode()).hexdigest()
+    try:
+        user_by_api_key = await db.fetchrow(
+            """
+            SELECT *
+            FROM user_api_keys
+            WHERE lookup_hash = $1
+            """,
+            lookup_hash
+        )
+        if user_by_api_key:
+            if verify_api_key(api_key, user_by_api_key["hashed_key"]):
+                logger.info("User found from api key")
+                return dict(user_by_api_key)
+        else:
+            logger.info("FAILED TO GET USER FROM API KEY")
+            raise
+    except Exception as e:
+        logger.info("EXCEPTION THROWN ON GET USER FUNCTION")
+        raise
+
+
 def generate_api_key():
     secret = token_urlsafe(32)
     prefix = "tf_"
     api_key = f"{prefix}{secret}"
-    return api_key, secret, prefix   
+    return api_key, prefix   
 
-def hash_api_key(api_key):
-    return hasher.hash(api_key)
 
-def verify_api_key(api_key):
-    return hasher.verify(api_key)
+def create_api_key_hashes(api_key: str):
+    lookup_hash = hashlib.sha256(api_key.encode()).hexdigest()
+    verify_hash = hasher.hash(api_key)
+    return lookup_hash, verify_hash
+
+
+def verify_api_key(api_key, hash):
+    return hasher.verify(api_key, hash)
+
 
 async def create_user_api_key(api_key_name, user_id: int, db: AsyncDB):
-    api_key, secret, key_prefix = generate_api_key()
-    hashed_api_key = hash_api_key(secret)
+    api_key, key_prefix = generate_api_key()
+    lookup_hash, hashed_api_key = create_api_key_hashes(api_key)
     try:
         record = await db.fetchrow(
             """
-            INSERT INTO user_api_keys (name, hashed_key, user_id, key_prefix)
-            VALUES ($1, $2, $3, $4)
+            INSERT INTO user_api_keys (name, lookup_hash, hashed_key, user_id, key_prefix)
+            VALUES ($1, $2, $3, $4, $5)
             RETURNING *;
             """,
             api_key_name,
+            lookup_hash,
             hashed_api_key,
             user_id,
             key_prefix,
@@ -268,6 +277,7 @@ async def delete_user_api_key(apikey_id: int, user_id: int, db: AsyncDB):
         return user_api_key
     except:
         raise
+
 
 async def list_user_api_keys(user_id: int, db: AsyncDB):
     try:
