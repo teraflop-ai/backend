@@ -121,4 +121,5 @@ async def user_balance(
 ):
     balance = await get_user_balance(current_user.id, db)
     logger.info(balance)
-    return balance
+    formatted_balance = round(balance.balance, 2)
+    return {"balance": formatted_balance} 

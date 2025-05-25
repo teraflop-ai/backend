@@ -11,6 +11,7 @@ from app.core.transactions import (
     get_user_balance,
 )
 from app.core.users import get_user_by_api_key
+# from app.core.inference import Baseten
 from loguru import logger
 from flash_tokenizer import BertTokenizerFlash
 
@@ -24,7 +25,7 @@ MODEL_CONFIG = {
     },
 }
 
-@embedding_router.post("/embeddings")
+@embedding_router.post("/embeddings", response_model=EmbeddingResponse)
 async def embed_text(
     request: TextInput,
     db: AsyncDB,
@@ -37,15 +38,18 @@ async def embed_text(
 
     user_id = await get_user_by_api_key(api_key, db)
     logger.info(f"User: {user_id}")
-    user_balance = await get_user_balance(user_id["user_id"], db)
-    logger.info(f"User balance: {user_balance}")
-    if user_balance["balance"] < 0:
-        raise
+    
     token_count = count_tokens(request.input, request.model)
     logger.info(f"Num tokens: {token_count}")
     amount = calculate_embedding_cost(token_count, request.model)
     logger.info(f"Amount to deduct {amount}")
-    await decrement_user_balance(amount, user_id["user_id"], db)
+    
+    user_balance = await get_user_balance(user_id.user_id, db)
+    logger.info(f"User balance: {user_balance}")
+    if user_balance.balance < amount:
+        raise
+
+    await decrement_user_balance(amount, user_id.user_id, db)
 
     return EmbeddingResponse(
         embedding=[0.1, 0.2, 0.3],  # Will be filled when you add actual embedding logic

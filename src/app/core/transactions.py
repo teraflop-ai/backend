@@ -52,7 +52,7 @@ async def get_user_balance(user_id: int, db: AsyncDB):
         )
         if user_balance:
             logger.info(f"User balance: {user_balance}")
-            return user_balance
+            return UserBalance(**dict(user_balance))
         else:
             logger.error("User balance not found")
             return {"balance": "not found"}

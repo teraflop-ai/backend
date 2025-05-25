@@ -199,8 +199,8 @@ async def delete_user(user_id: int, db: AsyncDB):
 async def get_user_by_api_key(api_key: str, db: AsyncDB):
     """
     """
-    lookup_hash = hashlib.sha256(api_key.encode()).hexdigest()
     try:
+        lookup_hash = hashlib.sha256(api_key.encode()).hexdigest()
         user_by_api_key = await db.fetchrow(
             """
             SELECT *
@@ -212,7 +212,9 @@ async def get_user_by_api_key(api_key: str, db: AsyncDB):
         if user_by_api_key:
             if verify_api_key(api_key, user_by_api_key["hashed_key"]):
                 logger.info("User found from api key")
-                return dict(user_by_api_key)
+                return UserAPIKey(**dict(user_by_api_key))
+            else:
+                raise
         else:
             logger.info("FAILED TO GET USER FROM API KEY")
             raise

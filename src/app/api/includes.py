@@ -3,7 +3,6 @@ from fastapi import APIRouter
 from app.api.v1.routes import (
     auth, users, stripe, utils, embedding
 )
-
 from typing import Any
 import msgspec
 
