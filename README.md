@@ -77,11 +77,20 @@ CREATE TABLE IF NOT EXISTS user_balance (
         ON DELETE CASCADE  
 );
 ```
-Creat Models Table
+Create User Transactions Table
+```sql
+CREATE TABLE IF NOT EXISTS user_transactions (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER UNIQUE NOT NULL,
+    invoice_amount DECIMAL(19, 4) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE,
+)
+```
+Create Models Table
 ```sql
 CREATE TABLE IF NOT EXISTS models (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(255) UNIQUE NOT NULL
+    name VARCHAR(255) UNIQUE NOT NULL,
 );
 ```
 List tables

@@ -62,7 +62,6 @@ async def logout(response: Response):
         # domain=".yourdomain.com"
     )
     logger.info("Successfully logged out")
-    return RedirectResponse(url="/")
 
 
 @auth_router.get("/auth", tags=["Authentication"])

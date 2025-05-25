@@ -2,7 +2,7 @@ from app.schemas.users import UserBalance
 from app.dependencies.db import AsyncDB
 from loguru import logger
 
-async def increment_user_balance(amount, user_id, db: AsyncDB):
+async def increment_user_balance(amount, user_id: int, db: AsyncDB):
     try:
         # async with db.transaction():
         user_transaction = await db.fetchrow(
@@ -25,17 +25,20 @@ async def increment_user_balance(amount, user_id, db: AsyncDB):
         logger.error("Failed to increment user balance")
         raise
 
-async def decrement_user_balance(amount, user_email, db: AsyncDB):
-    async with db.transaction():
-        await db.execute(
-            """
-            UPDATE users
-            SET balance = balance - $1
-            WHERE id = $2
-            """,
-            amount,
-            user_email,
-        )
+async def decrement_user_balance(amount, user_id: int, db: AsyncDB):
+    try:
+        async with db.transaction():
+            await db.execute(
+                """
+                UPDATE user_balance
+                SET balance = balance - $1
+                WHERE user_id = $2
+                """,
+                amount,
+                user_id,
+            )
+    except Exception as e:
+        raise
 
 async def get_user_balance(user_id: int, db: AsyncDB):
     try:

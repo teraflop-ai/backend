@@ -10,6 +10,16 @@ from app.core.inference import Baseten
 
 embedding_router = APIRouter()
 
+tokenizer = "MY_TOKENIZER"
+
+def count_tokens(text: str) -> int:
+    return len(tokenizer.encode(text))
+
+def calculate_embedding_cost(token_count: int) -> decimal.Decimal:
+    "Calculate cost based on $0.18 per 1M tokens."
+    cost_per_million_tokens = decimal.Decimal("0.18")
+    return (decimal.Decimal(str(token_count)) / decimal.Decimal("1000000")) * cost_per_million_tokens
+
 
 @embedding_router.post("embed_text", response_model=EmbeddingResponse)
 async def embed_text(
@@ -17,8 +27,9 @@ async def embed_text(
     api_key: str,
     db: AsyncDB,
 ):
+    num_tokens = count_tokens(input_text)
     user_id = get_user_by_api_key(api_key, db)
-    await decrement_user_balance(amount, user_id, db)
+    await decrement_user_balance(amount, user_id.id, db)
 
     return EmbeddingResponse(embedding=embedding[0].tolist())
 
