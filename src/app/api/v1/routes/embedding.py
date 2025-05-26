@@ -11,7 +11,7 @@ from app.core.transactions import (
     get_user_balance,
 )
 from app.core.users import get_user_by_api_key
-# from app.core.inference import Baseten
+from app.core.inference import Baseten
 from loguru import logger
 from flash_tokenizer import BertTokenizerFlash
 
@@ -21,7 +21,8 @@ MODEL_CONFIG = {
     'bert-base-multilingual-cased': {
         "tokenizer": 'bert-base-multilingual-cased',
         "cost_per_1m_tokens": decimal.Decimal("0.18"),
-        "model_class": "openai"
+        "model_class": "openai",
+        "baseten_model_id": "" 
     },
 }
 
@@ -51,8 +52,10 @@ async def embed_text(
 
     await decrement_user_balance(amount, user_id.user_id, db)
 
+    embedding = await baseten_embed(request.model, request.input)
+
     return EmbeddingResponse(
-        embedding=[0.1, 0.2, 0.3],  # Will be filled when you add actual embedding logic
+        embedding=embedding,  # Will be filled when you add actual embedding logic
         model=request.model,
         usage={
             "prompt_tokens": token_count,
@@ -80,5 +83,17 @@ def get_tokenizer(model_name: str):
         raise ValueError(f"Unsupported model: {model_name}")
     return BertTokenizerFlash.from_pretrained(config["tokenizer"])
 
-def baseten_embed(model_id, payload):
-    pass
+async def baseten_embed(model_name: str, text: str) -> list[float]:
+    """Generate embeddings using Baseten API."""
+    config = MODEL_CONFIG.get(model_name)
+    if not config:
+        raise ValueError(f"Unsupported model: {model_name}")
+    
+    model_id = config.get("baseten_model_id")
+    if not model_id:
+        raise ValueError(f"No Baseten model ID configured for {model_name}")
+    
+    baseten = Baseten(model_id)
+    result = await baseten.embed(text)
+    
+    return result

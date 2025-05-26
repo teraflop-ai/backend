@@ -62,6 +62,13 @@ SUPABASE_URL = client.secrets.get_secret_by_name(
     secret_path="/",
 )
 
+BASETEN_API_KEY = client.secrets.get_secret_by_name(
+    secret_name="BASETEN_API_KEY",
+    project_id=INFISICAL_PROJECT_ID,
+    environment_slug="dev",
+    secret_path="/",
+)
+
 # SUPABASE_KEY = client.secrets.get_secret_by_name(
 #     secret_name="SUPABASE_KEY",
 #     project_id=INFISICAL_PROJECT_ID,
