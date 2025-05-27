@@ -1,4 +1,3 @@
-from fastapi import Depends
 from datetime import timedelta
 from loguru import logger
 from authlib.integrations.starlette_client import OAuth, OAuthError
@@ -14,14 +13,16 @@ from app.core.users import (
     create_access_token,
     set_last_logged_in
 )
-import msgspec
 
 FASTAPI_BACKEND_URL="http://localhost:8000"
 NEXTJS_FRONTEND_URL="http://localhost:3000"
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-auth_router = APIRouter()
+auth_router = APIRouter(
+    prefix="/auth",
+    tags=["Authentication"]
+)
 
 oauth = OAuth(
     config=Config(
@@ -39,9 +40,9 @@ oauth.register(
 )
 
 
-@auth_router.get("/login/google", tags=["Authentication"])
+@auth_router.get("/login/google")
 async def login_google(request: Request):
-    redirect_uri = FASTAPI_BACKEND_URL + "/auth/"
+    redirect_uri = FASTAPI_BACKEND_URL + "/auth/google/callback/"
     code_verifier = generate_token(48)
     request.session["code_verifier"] = code_verifier
     return await oauth.google.authorize_redirect(
@@ -52,7 +53,7 @@ async def login_google(request: Request):
     )
 
 
-@auth_router.post("/logout", tags=["Authentication"])
+@auth_router.post("/logout")
 async def logout(response: Response):
     response.delete_cookie(
         key="access_token",
@@ -65,7 +66,7 @@ async def logout(response: Response):
     logger.info("Successfully logged out")
 
 
-@auth_router.get("/auth", tags=["Authentication"])
+@auth_router.get("/google/callback")
 async def auth_google_callback(request: Request, db: AsyncDB):
     logger.info(request.session)
     # await google access token
@@ -97,9 +98,9 @@ async def auth_google_callback(request: Request, db: AsyncDB):
 
     # get user from email
     user = await get_user_by_email(user_email, db)
-    logger.info(f"User found by email {user_email} : {user}")
     if user:
-        set_last_logged_in(user)
+        logger.info(f"User found by email {user_email} : {user}")
+        await set_last_logged_in(user, db)
     else:
         # Create new user if they do not exist
         logger.info("User does not exist. Creating user...")

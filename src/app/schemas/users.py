@@ -5,9 +5,11 @@ from typing import Optional
 class User(Struct):
     id: int
     email: str
-    full_name: str
-    google_id: str    
+    full_name: str   
     picture_url: str
+    created_at: datetime.datetime
+    last_logged_in_at: datetime.datetime
+    google_id: Optional[str] = None 
 
 class UserBalance(Struct):
     balance: float

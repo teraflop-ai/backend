@@ -154,17 +154,18 @@ async def get_current_user(request: Request, db: AsyncDB) -> User:
             logger.error(f"{user_email}")
             raise HTTPException(status_code=401, detail="User not authenticated")
     except JWTError:
-        logger.error("Reeeee")
+        logger.error("Failed to decode JWT")
         raise credentials_exception
 
     try:
         user_record = await get_user_by_email(user_email, db)
+        logger.info(f"Found user record {user_record}")
         if not user_record:
-            logger.error(f"Found user by email: {user_record}")
+            logger.error(f"User not found by email: {user_record}")
             raise credentials_exception
         return user_record
     except Exception as e:
-        logger.error(f"Error fetching user {user_record}: {e}")
+        logger.error(f"Error fetching user email {user_email}: {e}")
         raise HTTPException(status_code=500, detail="Could not retrieve user data.")
 
 
@@ -274,7 +275,7 @@ async def create_user_api_key(api_key_name, user_id: int, db: AsyncDB):
         raise
 
 
-async def delete_user_api_key(apikey_id: int, user_id: int, db: AsyncDB):
+async def delete_user_api_key(api_key_id: int, user_id: int, db: AsyncDB):
     try:
         user_api_key = await db.fetchrow(
             """
@@ -282,7 +283,7 @@ async def delete_user_api_key(apikey_id: int, user_id: int, db: AsyncDB):
             WHERE id = $1 AND user_id = $2
             RETURNING id
             """,
-            int(apikey_id),
+            int(api_key_id),
             user_id
         )
         return user_api_key
