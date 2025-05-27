@@ -7,22 +7,19 @@ from app.infisical.infisical import (
     STRIPE_WEBHOOK_SECRET,
 )
 from fastapi import (
-    APIRouter, 
-    Depends, 
+    APIRouter,
     Request, 
     HTTPException, 
     Header
 )
-from fastapi.responses import RedirectResponse
 import decimal
 from app.core.transactions import (
     increment_user_balance, 
     get_user_balance
 )
+from app.dependencies.users import CurrentUser
 from app.dependencies.db import AsyncDB
 from loguru import logger
-from app.core.users import get_current_user
-from app.schemas.users import User
 import os
 from dotenv_vault import load_dotenv
 
@@ -37,9 +34,7 @@ payment_router = APIRouter(prefix="/payments", tags=["Payments"])
 
 
 @payment_router.post("/create-checkout-session")
-async def create_checkout_session(
-    current_user: User = Depends(get_current_user)
-):
+async def create_checkout_session(current_user: CurrentUser):
     stripe.api_key = STRIPE_SECRET_KEY.secretValue
     try:
         checkout_session = checkout.Session.create(
@@ -115,10 +110,7 @@ async def webhook_recieved(
 
 
 @payment_router.get('/get-balance')
-async def user_balance(
-    db: AsyncDB,
-    current_user = Depends(get_current_user)
-):
+async def user_balance(db: AsyncDB, current_user: CurrentUser):
     balance = await get_user_balance(current_user.id, db)
     logger.info(balance)
     formatted_balance = round(balance.balance, 2)

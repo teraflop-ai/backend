@@ -88,7 +88,7 @@ async def get_user_by_email(email: str, db: AsyncDB):
         raise
 
 
-async def get_user_by_google_id(google_id, db: AsyncDB):
+async def get_user_by_google_id(google_id: str, db: AsyncDB):
     """
     """
     try:
@@ -246,11 +246,11 @@ def create_api_key_hashes(api_key: str):
     return lookup_hash, verify_hash
 
 
-def verify_api_key(api_key, hash):
+def verify_api_key(api_key: str, hash: str):
     return hasher.verify(api_key, hash)
 
 
-async def create_user_api_key(api_key_name, user_id: int, db: AsyncDB):
+async def create_user_api_key(api_key_name: str, user_id: int, db: AsyncDB):
     api_key, key_prefix = generate_api_key()
     lookup_hash, hashed_api_key = create_api_key_hashes(api_key)
     try:

@@ -21,7 +21,6 @@ MODEL_CONFIG = {
     'bert-base-multilingual-cased': {
         "tokenizer": 'bert-base-multilingual-cased',
         "cost_per_1m_tokens": decimal.Decimal("0.18"),
-        "model_class": "openai",
         "baseten_model_id": "" 
     },
 }
@@ -55,7 +54,7 @@ async def embed_text(
     embedding = await baseten_embed(request.model, request.input)
 
     return EmbeddingResponse(
-        embedding=embedding,  # Will be filled when you add actual embedding logic
+        embedding=embedding,
         model=request.model,
         usage={
             "prompt_tokens": token_count,

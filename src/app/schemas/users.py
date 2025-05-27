@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 from msgspec import Struct
 from typing import Optional
 
@@ -7,8 +7,8 @@ class User(Struct):
     email: str
     full_name: str   
     picture_url: str
-    created_at: datetime.datetime
-    last_logged_in_at: datetime.datetime
+    created_at: datetime
+    last_logged_in_at: datetime
     google_id: Optional[str] = None 
 
 class UserBalance(Struct):
@@ -20,7 +20,7 @@ class UserAPIKey(Struct):
     hashed_key: str
     lookup_hash: str
     key_prefix: str
-    created_at: Optional[datetime.datetime] = None
+    created_at: datetime
     is_active: bool = True
     name: Optional[str] = None
 
