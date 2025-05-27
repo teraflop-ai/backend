@@ -4,26 +4,44 @@ from loguru import logger
 
 async def increment_user_balance(amount, user_id: int, db: AsyncDB):
     try:
-        # async with db.transaction():
-        user_transaction = await db.fetchrow(
-            """
-            UPDATE user_balance
-            SET balance = balance + $1
-            WHERE user_id = $2
-            RETURNING *
-            """,
-            amount,
-            int(user_id),
-        )
-        if user_transaction:
-            logger.info("Incremented user balance")
-            return UserBalance(**dict(user_transaction))
-        else:
-            logger.warning("Warning")
-            return None
+        async with db.transaction():
+            # update user balance
+            update_user_balance = await db.fetchrow(
+                """
+                UPDATE user_balance
+                SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP
+                WHERE user_id = $2
+                RETURNING balance
+                """,
+                amount,
+                int(user_id),
+            )
+            if not update_user_balance:
+                raise Exception(f"Failed to update balance for user_id: {user_id}")
+            
+            logger.info(f"Incremented user balance {update_user_balance}")
+
+            # update user transactions
+            transaction_record = await db.fetchrow(
+                """
+                INSERT INTO user_transactions (user_id, amount)
+                VALUES ($1, $2)
+                RETURNING *
+                """,
+                int(user_id),
+                amount
+            )
+            if not transaction_record:
+                raise Exception("Failed to create transaction record")
+            
+            logger.info(f"Updated user transaction record {transaction_record}")
+
+            return UserBalance(**dict(update_user_balance))
+
     except Exception as e:
         logger.error("Failed to increment user balance")
         raise
+
 
 async def decrement_user_balance(amount, user_id: int, db: AsyncDB):
     try:
@@ -39,6 +57,14 @@ async def decrement_user_balance(amount, user_id: int, db: AsyncDB):
             )
     except Exception as e:
         raise
+
+
+async def get_user_transactions(user_id: int, db: AsyncDB):
+    try:
+        user_transactions = await db.fetchrow()
+    except:
+        raise
+
 
 async def get_user_balance(user_id: int, db: AsyncDB):
     try:

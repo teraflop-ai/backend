@@ -61,7 +61,7 @@ async def create_checkout_session(current_user: CurrentUser):
 
 
 @payment_router.post("/webhook")
-async def webhook_recieved(
+async def webhook_received(
     request: Request,
     db: AsyncDB,
     stripe_signature: Optional[str] = Header(None),
@@ -75,7 +75,7 @@ async def webhook_recieved(
         )
     except Exception as e:
         logger.info("Error")
-        raise
+        raise Exception("WEBHOOK FAILED")
 
     if event["type"] == "checkout.session.completed":
         session = event['data']['object']

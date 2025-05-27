@@ -1,6 +1,7 @@
 from datetime import datetime
 from msgspec import Struct
 from typing import Optional
+from decimal import Decimal
 
 class User(Struct):
     id: int
@@ -12,7 +13,7 @@ class User(Struct):
     google_id: Optional[str] = None 
 
 class UserBalance(Struct):
-    balance: float
+    balance: Decimal 
 
 class UserAPIKey(Struct):
     id: int
