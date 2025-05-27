@@ -1,10 +1,8 @@
-from app.schemas.users import User
 from fastapi import Request, HTTPException, status
 from app.dependencies.db import AsyncDB
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
 from typing import Optional
-from fastapi.security.api_key import APIKeyHeader
 from loguru import logger
 from secrets import token_urlsafe
 from app.schemas.users import User, UserAPIKey
@@ -14,8 +12,6 @@ from pwdlib import PasswordHash
 
 SECRET_KEY = SESSION_SECRET_KEY.secretValue
 ALGORITHM = "HS256"
-API_KEY_NAME = "X-API-Key"
-api_key_header_scheme = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
 hasher = PasswordHash.recommended()
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
@@ -33,36 +29,36 @@ async def create_user(user: dict, db: AsyncDB):
     """
     """
     try:
-        user_record = await db.fetchrow(
-            """
-            INSERT INTO users (email, full_name, google_id, picture_url)
-            VALUES ($1, $2, $3, $4)
-            RETURNING *;
-            """,
-            user.get("email"),
-            user.get("name"),
-            user.get("sub"),
-            user.get("picture"),
-        )
-        if user_record:
+        async with db.transaction():
+            user_record = await db.fetchrow(
+                """
+                INSERT INTO users (email, full_name, google_id, picture_url)
+                VALUES ($1, $2, $3, $4)
+                RETURNING *;
+                """,
+                user.get("email"),
+                user.get("name"),
+                user.get("sub"),
+                user.get("picture"),
+            )
+            if not user_record:
+                raise
+
             logger.info(f"Created user: {user_record}")
-            user_record_dict = dict(user_record)
-            user_id = user_record_dict.get('id')
-            initial_balance = 0.0
+            user_id = user_record['id']
             balance_record = await db.fetchrow(
                 """
-                INSERT INTO user_balance (user_id, balance, created_at)
-                VALUES ($1, $2, CURRENT_TIMESTAMP)
+                INSERT INTO user_balance (user_id)
+                VALUES ($1)
                 RETURNING *
                 """,
                 user_id,
-                initial_balance,
             )
+            if not balance_record:
+                raise
             logger.info(f"Created balance for user: {balance_record}")
             return User(**dict(user_record))
-        else:
-            logger.error("Failed to create user")
-            raise Exception("User creation failed")
+
     except Exception as e:
         logger.error({e})
         raise
@@ -195,6 +191,19 @@ async def delete_user(user_id: int, db: AsyncDB):
         raise
         
 
+async def set_last_logged_in(user, db: AsyncDB):
+    try:
+        await db.execute(
+            """
+            UPDATE users 
+            SET last_logged_in_at = CURRENT_TIMESTAMP 
+            WHERE id = $1
+            """,
+            user.id
+        )
+    except:
+        raise
+
 
 async def get_user_by_api_key(api_key: str, db: AsyncDB):
     """
@@ -291,7 +300,6 @@ async def list_user_api_keys(user_id: int, db: AsyncDB):
             """,
             user_id,
         )
-        print(user_api_keys)
         if user_api_keys:
             logger.info(f"Found user api keys: {user_api_keys}")
             return [UserAPIKey(**dict(key)) for key in user_api_keys]
@@ -300,3 +308,9 @@ async def list_user_api_keys(user_id: int, db: AsyncDB):
             return None
     except:
         raise
+
+async def get_user_token_usage(user_id: int, db: AsyncDB):
+    pass
+
+async def update_user_token_usage(user_int: int, db: AsyncDB):
+    pass

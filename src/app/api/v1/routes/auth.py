@@ -12,6 +12,7 @@ from app.core.users import (
     get_user_by_email,
     create_user,
     create_access_token,
+    set_last_logged_in
 )
 import msgspec
 
@@ -97,7 +98,9 @@ async def auth_google_callback(request: Request, db: AsyncDB):
     # get user from email
     user = await get_user_by_email(user_email, db)
     logger.info(f"User found by email {user_email} : {user}")
-    if not user:
+    if user:
+        set_last_logged_in(user)
+    else:
         # Create new user if they do not exist
         logger.info("User does not exist. Creating user...")
         user = await create_user(user_info, db)
