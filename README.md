@@ -37,7 +37,6 @@ Drop db
 dropdb mydb
 ```
 Create Users Table
-
 ```sql
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
@@ -45,15 +44,62 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(255) UNIQUE NOT NULL,
     full_name VARCHAR(255) NOT NULL,
     picture_url TEXT,
+    last_selected_organization_id INTEGER,
+    last_selected_project_id INTEGER,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     last_logged_in_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+
+    CONSTRAINT fk_last_selected_organization
+        FOREIGN KEY(last_selected_organization_id)
+        REFERENCES organizations(id)
+        ON DELETE SET NULL,
+
+    CONSTRAINT fk_last_selected_project
+        FOREIGN KEY(last_selected_project_id)
+        REFERENCES projects(id)
+        ON DELETE SET NULL;
 );
 ```
-Create User API keys Table
+Create Organizations Table
 ```sql
-CREATE TABLE IF NOT EXISTS user_api_keys (
+CREATE TABLE IF NOT EXISTS organizations (
+    id SERIAL PRIMARY KEY,
+    organization_name VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP 
+);
+```
+Create Organization Members Table
+```sql
+CREATE TABLE IF NOT EXISTS organization_members (
+    id SERIAL PRIMARY KEY,
+    organization_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    role VARCHAR(16) NOT NULL DEFAULT 'member',
+    joined_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_members_organization
+        FOREIGN KEY(organization_id)
+        REFERENCES organizations(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_members_user
+        FOREIGN KEY(user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT unique_organization_user
+        UNIQUE (organization_id, user_id),
+
+    CONSTRAINT check_role CHECK (role IN ('admin', 'member'))
+);
+```
+Create API keys Table
+```sql
+CREATE TABLE IF NOT EXISTS api_keys (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL,
+    organization_id INTEGER NOT NULL,
     name VARCHAR(255),
     hashed_key VARCHAR(255) UNIQUE NOT NULL,
     lookup_hash CHAR(64) NOT NULL UNIQUE,
@@ -62,40 +108,38 @@ CREATE TABLE IF NOT EXISTS user_api_keys (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     last_used_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 
+    CONSTRAINT fk_api_keys_organization
+        FOREIGN KEY(organization_id)
+        REFERENCES organizations(id)
+        ON DELETE CASCADE,
+
     CONSTRAINT fk_api_keys_user
         FOREIGN KEY(user_id)
         REFERENCES users(id)
         ON DELETE CASCADE 
 );
 ```
-Create User Balance Table
+Create Organization Balance Table
 ```sql
-CREATE TABLE IF NOT EXISTS user_balance (
+CREATE TABLE IF NOT EXISTS organization_balance (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER UNIQUE NOT NULL,
+    organization_id INTEGER UNIQUE NOT NULL,
     balance DECIMAL(19, 8) NOT NULL DEFAULT 0.00000000,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT fk_balance_user
-        FOREIGN KEY(user_id)
-        REFERENCES users(id)
+    CONSTRAINT fk_balance_organization
+        FOREIGN KEY(organization_id)
+        REFERENCES organizations(id)
         ON DELETE CASCADE  
 );
 ```
 
-Add multiple columns to table
+Create Organization Transactions Table
 ```sql
-ALTER TABLE user_transactions 
-ADD COLUMN status VARCHAR(64),
-ADD COLUMN invoice_number TEXT UNIQUE,
-ADD COLUMN invoice_url TEXT; 
-```
-
-Create User Transactions Table
-```sql
-CREATE TABLE IF NOT EXISTS user_transactions (
+CREATE TABLE IF NOT EXISTS organization_transactions (
     id SERIAL PRIMARY KEY,
+    organization_id INTEGER NOT NULL,
     user_id INTEGER NOT NULL,
     amount DECIMAL(19, 8) NOT NULL,
     status VARCHAR(64) NOT NULL,
@@ -106,13 +150,19 @@ CREATE TABLE IF NOT EXISTS user_transactions (
     CONSTRAINT fk_transactions_user
         FOREIGN KEY(user_id)
         REFERENCES users(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_transactions_organization
+        FOREIGN KEY(organization_id)
+        REFERENCES organizations(id)
         ON DELETE CASCADE
 );
 ```
-Create User Token Usage Table
+Create Organization Token Usage Table
 ```sql
-CREATE TABLE IF NOT EXISTS user_token_usage (
+CREATE TABLE IF NOT EXISTS organization_token_usage (
     id SERIAL PRIMARY KEY,
+    organization_id INTEGER NOT NULL,
     user_id INTEGER NOT NULL,
     usage_date DATE NOT NULL DEFAULT CURRENT_DATE,
     token_count INT DEFAULT 0 CHECK (token_count >= 0),
@@ -126,10 +176,101 @@ CREATE TABLE IF NOT EXISTS user_token_usage (
         REFERENCES users(id)
         ON DELETE CASCADE,
 
+    CONSTRAINT fk_token_usage_organization
+        FOREIGN KEY(organization_id)
+        REFERENCES organizations(id)
+        ON DELETE CASCADE,
+
     CONSTRAINT unique_user_date 
-        UNIQUE (user_id, usage_date)
+        UNIQUE (user_id, organization_id, usage_date)
 );
 ```
+Create Projects Table
+```sql
+CREATE TABLE IF NOT EXISTS projects(
+    id SERIAL PRIMARY KEY,
+    organization_id INTEGER NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT fk_projects_org
+        FOREIGN KEY(organization_id)
+        REFERENCES organizations(id)
+        ON DELETE CASCADE,
+        
+    CONSTRAINT unique_organization_project_name
+        UNIQUE (organization_id, name)
+);
+```
+Create Projects Members Table
+```sql
+CREATE TABLE IF NOT EXISTS project_members(
+    id SERIAL PRIMARY KEY,
+    project_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    role VARCHAR(16) NOT NULL DEFAULT 'member',
+    joined_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT fk_project_members
+        FOREIGN KEY(project_id)
+        REFERENCES projects(id)
+        ON DELETE CASCADE,
+        
+    CONSTRAINT fk_project_members_user
+        FOREIGN KEY(user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE,
+        
+    CONSTRAINT unique_project_user
+        UNIQUE (project_id, user_id),
+
+    CONSTRAINT check_role CHECK (role IN ('admin', 'member'))
+);
+```
+Create Projects Token Usage
+```sql
+CREATE TABLE IF NOT EXISTS project_token_usage (
+    id SERIAL PRIMARY KEY,
+    project_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    usage_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    token_count INT DEFAULT 0 CHECK (token_count >= 0),
+    request_count INT DEFAULT 0 CHECK (request_count >= 0),
+    total_spend DECIMAL(19, 8) DEFAULT 0.00000000 CHECK (total_spend >= 0),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_project_token_usage
+        FOREIGN KEY(project_id)
+        REFERENCES projects(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_project_token_usage_user
+        FOREIGN KEY(user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT unique_project_date 
+        UNIQUE (project_id, user_id, usage_date)
+);
+```
+Project Balance
+```sql
+CREATE TABLE IF NOT EXISTS project_balance (
+    id SERIAL PRIMARY KEY,
+    project_id INTEGER UNIQUE NOT NULL,
+    balance DECIMAL(19, 8) NOT NULL DEFAULT 0.00000000,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_balance_project
+        FOREIGN KEY(project_id)
+        REFERENCES projects(id)
+        ON DELETE CASCADE  
+);
+```
+
 Create User Subscriptions Table
 ```sql
 CREATE TABLE IF NOT EXISTS user_subscriptions (
@@ -167,6 +308,13 @@ ALTER TABLE table_name RENAME COLUMN column_name to new_name;
 Add table column
 ```sql
 ALTER TABLE table_name ADD column_name varchar(255);
+```
+Add multiple columns to table
+```sql
+ALTER TABLE user_transactions 
+ADD COLUMN status VARCHAR(64),
+ADD COLUMN invoice_number TEXT UNIQUE,
+ADD COLUMN invoice_url TEXT; 
 ```
 Drop table column
 ```sql

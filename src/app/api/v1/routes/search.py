@@ -1,4 +1,3 @@
-import batched
 from app.schemas.embedding import TextInput, SearchResponse
 from fastapi import APIRouter, Depends, Request, HTTPException, Header
 from app.dependencies.db import Client

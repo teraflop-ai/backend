@@ -6,7 +6,9 @@ from typing import Optional
 from loguru import logger
 from secrets import token_urlsafe
 from app.schemas.users import (
-    User, UserAPIKey, UserDeleteAPIKey
+    User, 
+    UserAPIKey, 
+    UserDeleteAPIKey
 )
 from app.infisical.infisical import SESSION_SECRET_KEY
 import hashlib
@@ -312,7 +314,22 @@ async def list_user_api_keys(user_id: int, db: AsyncDB):
     except:
         raise
 
-
-async def get_user_monthly_token_usage(user_id: int, db: AsyncDB):
+async def create_organization():
     pass
 
+async def get_user_organizations():
+    pass
+
+async def list_organization_members():
+    """
+    SELECT *
+    FROM 
+    """
+    pass
+
+
+async def invite_user_to_organization():
+    pass
+
+async def get_organization_projects():
+    pass
