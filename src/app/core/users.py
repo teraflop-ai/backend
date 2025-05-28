@@ -313,9 +313,6 @@ async def list_user_api_keys(user_id: int, db: AsyncDB):
         raise
 
 
-
-async def get_user_token_usage(user_id: int, db: AsyncDB):
+async def get_user_monthly_token_usage(user_id: int, db: AsyncDB):
     pass
 
-async def update_user_token_usage(user_int: int, db: AsyncDB):
-    pass

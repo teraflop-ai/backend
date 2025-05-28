@@ -1,8 +1,9 @@
 import stripe
-from datetime import datetime
+from app.core.users import get_user_by_api_key
 from app.schemas.users import UserBalance, UserTransactions
 from app.dependencies.db import AsyncDB
 from loguru import logger
+
 
 def get_invoice_by_id(invoice_id):
     try:
@@ -17,6 +18,7 @@ def get_invoice_by_id(invoice_id):
         return invoice_details
     except:
         raise Exception("Failed to get invoice id")
+
 
 async def increment_user_balance(amount, invoice, user_id: int, db: AsyncDB):
     try:
@@ -40,6 +42,8 @@ async def increment_user_balance(amount, invoice, user_id: int, db: AsyncDB):
             # update user transactions
             if invoice.get("amount_paid"):
                 status = "paid"
+            else:
+                status = "failed"
             
             transaction_record = await db.fetchrow(
                 """
@@ -65,10 +69,19 @@ async def increment_user_balance(amount, invoice, user_id: int, db: AsyncDB):
         raise
 
 
-async def decrement_user_balance(amount, user_id: int, db: AsyncDB):
+async def decrement_user_balance(api_key, amount, token_count, db: AsyncDB):
     try:
         async with db.transaction():
-            await db.execute(
+
+            user_id = await get_user_by_api_key(api_key, db)
+            user_balance = await get_user_balance(user_id.user_id, db)
+            if user_balance.balance < amount:
+                raise Exception("User balance is less than amount to be deducted")
+
+            user_usage = await update_user_usage(user_id, token_count, amount, db)
+            logger.info(f"Updated user stats: {user_usage}")
+
+            deduct_user_balance = await db.execute(
                 """
                 UPDATE user_balance
                 SET balance = balance - $1
@@ -77,6 +90,10 @@ async def decrement_user_balance(amount, user_id: int, db: AsyncDB):
                 amount,
                 user_id,
             )
+            if not deduct_user_balance:
+                raise Exception("Failed to deduct user balance")
+            
+            return deduct_user_balance
     except Exception as e:
         raise
 
@@ -99,6 +116,7 @@ async def get_user_transactions(user_id: int, db: AsyncDB):
         return [UserTransactions(**dict(transaction)) for transaction in user_transactions]
 
     except:
+        logger.error("Failed to get user transactions")
         raise
 
 
@@ -112,12 +130,38 @@ async def get_user_balance(user_id: int, db: AsyncDB):
             """,
             user_id
         )
-        if user_balance:
-            logger.info(f"User balance: {user_balance}")
-            return UserBalance(**dict(user_balance))
-        else:
-            logger.error("User balance not found")
-            return {"balance": "not found"}
+        if not user_balance:
+            raise Exception("User balance not found")
+        logger.info(f"User balance: {user_balance}")
+        return UserBalance(**dict(user_balance))
     except:
-        logger.error("failed to get user balance")
+        logger.error("Failed to get user balance")
         raise
+
+
+async def get_user_monthly_spend(user_id, db: AsyncDB):
+    pass
+
+async def update_user_usage(user_id, token_count, amount, db: AsyncDB):
+    try:
+        user_usage = await db.fetchrow(
+            """
+            INSERT INTO user_token_usage (user_id, usage_date, token_count, request_count, total_spend)
+            VALUES ($1, CURRENT_DATE, $2, 1, $3)
+            ON CONFLICT (user_id, usage_date) 
+            DO UPDATE SET 
+                token_count = user_token_usage.token_count + $2,
+                request_count = user_token_usage.request_count + 1,
+                total_spend = user_token_usage.total_spend + $3,
+                updated_at = CURRENT_TIMESTAMP
+            RETURNING id
+            """,
+            user_id,
+            token_count,
+            amount
+        )
+        if not user_usage:
+            raise Exception("User stats not found")
+        return user_usage
+    except:
+        raise Exception("Failed to update user usage stats")

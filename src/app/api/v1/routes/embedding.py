@@ -34,22 +34,16 @@ async def embed_text(
     if not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Invalid authorization header")
     
-    api_key = authorization.replace("Bearer ", "")
+    try:
+        api_key = authorization.replace("Bearer ", "")
+        token_count = count_tokens(request.input, request.model)
+        logger.info(f"Num tokens: {token_count}")
+        amount = calculate_embedding_cost(token_count, request.model)
+        logger.info(f"Amount to deduct {amount}")
+    except:
+        raise Exception("Failed to intiailize embedding endpoint call")
 
-    user_id = await get_user_by_api_key(api_key, db)
-    logger.info(f"User: {user_id}")
-    
-    token_count = count_tokens(request.input, request.model)
-    logger.info(f"Num tokens: {token_count}")
-    amount = calculate_embedding_cost(token_count, request.model)
-    logger.info(f"Amount to deduct {amount}")
-    
-    user_balance = await get_user_balance(user_id.user_id, db)
-    logger.info(f"User balance: {user_balance}")
-    if user_balance.balance < amount:
-        raise
-
-    await decrement_user_balance(amount, user_id.user_id, db)
+    await decrement_user_balance(api_key, amount, token_count, db)
 
     embedding = await baseten_embed(request.model, request.input)
 

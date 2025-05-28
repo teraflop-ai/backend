@@ -117,6 +117,7 @@ CREATE TABLE IF NOT EXISTS user_token_usage (
     usage_date DATE NOT NULL DEFAULT CURRENT_DATE,
     token_count INT DEFAULT 0 CHECK (token_count >= 0),
     request_count INT DEFAULT 0 CHECK (request_count >= 0),
+    total_spend DECIMAL(19, 8) DEFAULT 0.00000000 CHECK (total_spend >= 0),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 
