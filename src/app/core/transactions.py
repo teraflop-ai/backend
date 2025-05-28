@@ -1,6 +1,7 @@
 import stripe
+from datetime import date
 from app.core.users import get_user_by_api_key
-from app.schemas.users import UserBalance, UserTransactions
+from app.schemas.users import UserBalance, UserTransactions, UserUsage
 from app.dependencies.db import AsyncDB
 from loguru import logger
 
@@ -81,7 +82,7 @@ async def decrement_user_balance(api_key, amount, token_count, db: AsyncDB):
             user_usage = await update_user_usage(user_id, token_count, amount, db)
             logger.info(f"Updated user stats: {user_usage}")
 
-            deduct_user_balance = await db.execute(
+            deduct_user_balance = await db.fetchrow(
                 """
                 UPDATE user_balance
                 SET balance = balance - $1
@@ -139,8 +140,26 @@ async def get_user_balance(user_id: int, db: AsyncDB):
         raise
 
 
-async def get_user_monthly_spend(user_id, db: AsyncDB):
-    pass
+async def get_user_usage(user_id: int, start_date: date, end_date:date, db: AsyncDB):
+    try:
+        user_usage = await db.fetch(
+            """
+            SELECT id, user_id, usage_date, token_count, request_count, total_spend
+            FROM user_token_usage
+            WHERE user_id = $1
+            AND usage_date BETWEEN $2 and $3
+            ORDER BY usage_date DESC
+            """,
+            user_id,
+            start_date,
+            end_date
+        )
+        if not user_usage:
+            return []
+        return [UserUsage(**dict(usage)) for usage in user_usage]
+    except:
+        raise
+
 
 async def update_user_usage(user_id, token_count, amount, db: AsyncDB):
     try:

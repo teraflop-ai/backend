@@ -1,5 +1,6 @@
 import stripe
 from typing import Optional
+from datetime import date
 from stripe import checkout
 from app.infisical.infisical import (
     STRIPE_SECRET_KEY,
@@ -10,14 +11,16 @@ from fastapi import (
     APIRouter,
     Request, 
     HTTPException, 
-    Header
+    Header,
+    Query
 )
 import decimal
 from app.core.transactions import (
     increment_user_balance, 
     get_user_balance,
     get_user_transactions,
-    get_invoice_by_id
+    get_invoice_by_id,
+    get_user_usage
 )
 from app.dependencies.users import CurrentUser
 from app.dependencies.db import AsyncDB
@@ -150,3 +153,13 @@ async def current_user_transaction_history(db: AsyncDB, current_user: CurrentUse
     transaction_history = await get_user_transactions(current_user.id, db)
     logger.info(f"Transaction History {transaction_history}")
     return msgspec.to_builtins(transaction_history)
+
+@payment_router.get("/get-user-usage")
+async def current_user_usage(
+    db: AsyncDB, 
+    current_user: CurrentUser,
+    start_date: date = Query(..., description="Start date for usage range"),
+    end_date: date = Query(..., description="End date for usage range")
+):
+    user_usage = await get_user_usage(current_user.id, start_date, end_date, db)
+    return msgspec.to_builtins(user_usage)

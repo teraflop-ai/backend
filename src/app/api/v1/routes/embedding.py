@@ -6,11 +6,7 @@ from fastapi import (
 )
 from app.dependencies.db import AsyncDB
 import decimal
-from app.core.transactions import (
-    decrement_user_balance,
-    get_user_balance,
-)
-from app.core.users import get_user_by_api_key
+from app.core.transactions import decrement_user_balance
 from app.core.inference import Baseten
 from loguru import logger
 from flash_tokenizer import BertTokenizerFlash

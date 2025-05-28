@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 from msgspec import Struct
 from typing import Optional
 from decimal import Decimal
@@ -36,6 +36,14 @@ class UserTransactions(Struct):
     amount: Decimal
     created_at: datetime
     invoice_url: str
+
+class UserUsage(Struct):
+    id: int
+    user_id: int
+    usage_date: date
+    token_count: int
+    request_count: int
+    total_spend: Decimal
 
 class Token(Struct):
     access_token: str
