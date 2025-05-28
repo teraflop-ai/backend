@@ -1,8 +1,24 @@
-from app.schemas.users import UserBalance
+import stripe
+from datetime import datetime
+from app.schemas.users import UserBalance, UserTransactions
 from app.dependencies.db import AsyncDB
 from loguru import logger
 
-async def increment_user_balance(amount, user_id: int, db: AsyncDB):
+def get_invoice_by_id(invoice_id):
+    try:
+        invoice = stripe.Invoice.retrieve(invoice_id)
+        invoice_details = {
+            'invoice_number': invoice.number,
+            'invoice_url': invoice.hosted_invoice_url,
+            'amount_paid': invoice.amount_paid / 100,
+            'currency': invoice.currency,
+        }
+        logger.info(f"Invoice details: {invoice_details}")
+        return invoice_details
+    except:
+        raise Exception("Failed to get invoice id")
+
+async def increment_user_balance(amount, invoice, user_id: int, db: AsyncDB):
     try:
         async with db.transaction():
             # update user balance
@@ -22,14 +38,20 @@ async def increment_user_balance(amount, user_id: int, db: AsyncDB):
             logger.info(f"Incremented user balance {update_user_balance}")
 
             # update user transactions
+            if invoice.get("amount_paid"):
+                status = "paid"
+            
             transaction_record = await db.fetchrow(
                 """
-                INSERT INTO user_transactions (user_id, amount)
-                VALUES ($1, $2)
+                INSERT INTO user_transactions (user_id, amount, status, invoice_number, invoice_url)
+                VALUES ($1, $2, $3, $4, $5)
                 RETURNING *
                 """,
                 int(user_id),
-                amount
+                amount,
+                status,
+                invoice.get("invoice_number"),
+                invoice.get("invoice_url")
             )
             if not transaction_record:
                 raise Exception("Failed to create transaction record")
@@ -61,7 +83,21 @@ async def decrement_user_balance(amount, user_id: int, db: AsyncDB):
 
 async def get_user_transactions(user_id: int, db: AsyncDB):
     try:
-        user_transactions = await db.fetchrow()
+        user_transactions = await db.fetch(
+            """
+            SELECT id, invoice_number, status, amount, created_at, invoice_url
+            FROM user_transactions
+            WHERE user_id = $1
+            """,
+            user_id
+        )
+        if not user_transactions:
+            logger.info("No previous User Transactions")
+            return None
+        
+        logger.info(f"Found user api keys: {user_transactions}")
+        return [UserTransactions(**dict(transaction)) for transaction in user_transactions]
+
     except:
         raise
 

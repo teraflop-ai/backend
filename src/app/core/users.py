@@ -5,7 +5,9 @@ from datetime import datetime, timedelta
 from typing import Optional
 from loguru import logger
 from secrets import token_urlsafe
-from app.schemas.users import User, UserAPIKey
+from app.schemas.users import (
+    User, UserAPIKey, UserDeleteAPIKey
+)
 from app.infisical.infisical import SESSION_SECRET_KEY
 import hashlib
 from pwdlib import PasswordHash
@@ -34,7 +36,7 @@ async def create_user(user: dict, db: AsyncDB):
                 """
                 INSERT INTO users (email, full_name, google_id, picture_url)
                 VALUES ($1, $2, $3, $4)
-                RETURNING *;
+                RETURNING *
                 """,
                 user.get("email"),
                 user.get("name"),
@@ -177,7 +179,7 @@ async def delete_user(user_id: int, db: AsyncDB):
             """
             DELETE FROM users
             WHERE id = $1
-            RETURNING *;
+            RETURNING *
             """,
             user_id,
         )
@@ -286,7 +288,7 @@ async def delete_user_api_key(api_key_id: int, user_id: int, db: AsyncDB):
             int(api_key_id),
             user_id
         )
-        return user_api_key
+        return UserDeleteAPIKey(**dict(user_api_key))
     except:
         raise
 

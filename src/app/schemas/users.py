@@ -22,8 +22,20 @@ class UserAPIKey(Struct):
     lookup_hash: str
     key_prefix: str
     created_at: datetime
+    last_used_at: datetime
     is_active: bool = True
     name: Optional[str] = None
+
+class UserDeleteAPIKey(Struct):
+    id: int
+
+class UserTransactions(Struct):
+    id: int
+    invoice_number: str
+    status: str
+    amount: Decimal
+    created_at: datetime
+    invoice_url: str
 
 class Token(Struct):
     access_token: str

@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS user_api_keys (
     user_id INTEGER NOT NULL,
     name VARCHAR(255),
     hashed_key VARCHAR(255) UNIQUE NOT NULL,
+    lookup_hash CHAR(64) NOT NULL UNIQUE,
     key_prefix VARCHAR(255) NOT NULL,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -82,12 +83,24 @@ CREATE TABLE IF NOT EXISTS user_balance (
         ON DELETE CASCADE  
 );
 ```
+
+Add multiple columns to table
+```sql
+ALTER TABLE user_transactions 
+ADD COLUMN status VARCHAR(64),
+ADD COLUMN invoice_number TEXT UNIQUE,
+ADD COLUMN invoice_url TEXT; 
+```
+
 Create User Transactions Table
 ```sql
 CREATE TABLE IF NOT EXISTS user_transactions (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL,
     amount DECIMAL(19, 8) NOT NULL,
+    status VARCHAR(64) NOT NULL,
+    invoice_number TEXT UNIQUE NOT NULL,
+    invoice_url TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_transactions_user

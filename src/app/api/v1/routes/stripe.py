@@ -15,10 +15,13 @@ from fastapi import (
 import decimal
 from app.core.transactions import (
     increment_user_balance, 
-    get_user_balance
+    get_user_balance,
+    get_user_transactions,
+    get_invoice_by_id
 )
 from app.dependencies.users import CurrentUser
 from app.dependencies.db import AsyncDB
+import msgspec
 from loguru import logger
 import os
 from dotenv_vault import load_dotenv
@@ -49,6 +52,26 @@ async def create_checkout_session(current_user: CurrentUser):
             mode="payment",
             automatic_tax={
                 "enabled": True
+            },
+            invoice_creation={
+                'enabled': True,
+                'invoice_data': {
+                    'description': 'Payment for account credits',
+                    'custom_fields': [
+                        {
+                            'name': 'Purchase Type',
+                            'value': 'Account Credits'
+                        }
+                    ],
+                    'metadata': {
+                        'user_id': str(current_user.id),
+                        'purchase_type': 'credits'
+                    },
+                    'rendering_options': {
+                        'amount_tax_display': 'include_inclusive_tax'
+                    },
+                    'footer': 'Thank you for your purchase!'
+                }
             },
             metadata={
                 "user_id": str(current_user.id),
@@ -82,6 +105,12 @@ async def webhook_received(
 
         logger.info(f"Session data: {session}")
 
+        invoice_id = session.get("invoice")
+        if not invoice_id:
+            raise Exception("Failed to generate invoice id")
+        
+        invoice = get_invoice_by_id(invoice_id)
+
         metadata = session.get("metadata")
         logger.info(f"Metadata: {metadata}")
         user_id = metadata.get("user_id")
@@ -92,7 +121,8 @@ async def webhook_received(
         if session.get("payment_status") == "paid":
             try:
                 update_user_balance = await increment_user_balance(
-                    amount_dollars, 
+                    amount_dollars,
+                    invoice, 
                     user_id, 
                     db
                 )
@@ -108,10 +138,15 @@ async def webhook_received(
         payment_intent = event["data"]["object"]
     return {"status": "success"}
 
-
 @payment_router.get('/get-balance')
-async def user_balance(db: AsyncDB, current_user: CurrentUser):
+async def current_user_balance(db: AsyncDB, current_user: CurrentUser):
     balance = await get_user_balance(current_user.id, db)
     logger.info(balance)
     formatted_balance = round(balance.balance, 2)
     return {"balance": formatted_balance} 
+
+@payment_router.get("/get-transaction-history")
+async def current_user_transaction_history(db: AsyncDB, current_user: CurrentUser):
+    transaction_history = await get_user_transactions(current_user.id, db)
+    logger.info(f"Transaction History {transaction_history}")
+    return msgspec.to_builtins(transaction_history)
