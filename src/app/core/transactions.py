@@ -1,7 +1,12 @@
 import stripe
 from datetime import date
 from app.core.users import get_user_by_api_key
-from app.schemas.users import UserBalance, UserTransactions, UserUsage
+from app.schemas.users import (
+    ProjectBalance, 
+    OrganizationBalance, 
+    OrganizationTransactions, 
+    OrganizationUsage,
+)
 from app.dependencies.db import AsyncDB
 from loguru import logger
 
@@ -21,38 +26,81 @@ def get_invoice_by_id(invoice_id):
         raise Exception("Failed to get invoice id")
 
 
-async def increment_user_balance(amount, invoice, user_id: int, db: AsyncDB):
+async def increment_balance(
+    amount, 
+    invoice, 
+    user_id: int, 
+    organization_id: int,
+    project_id: int,
+    db: AsyncDB
+):
     try:
         async with db.transaction():
-            # update user balance
-            update_user_balance = await db.fetchrow(
+            #verify project belongs to organization
+            project_in_organization = await db.fetchval(
                 """
-                UPDATE user_balance
+                SELECT organization_id
+                FROM projects
+                WHERE id = $1
+                """,
+                project_id
+            )
+            if not project_in_organization:
+                raise Exception("Could not find project id")
+            
+            if project_in_organization != organization_id:
+                raise Exception("Project does not belong to organization")
+
+            # update project balance
+            update_project_balance = await db.fetchrow(
+                """
+                UPDATE project_balance
                 SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP
-                WHERE user_id = $2
+                WHERE project_id = $2
                 RETURNING balance
                 """,
                 amount,
-                int(user_id),
+                project_id,
             )
-            if not update_user_balance:
-                raise Exception(f"Failed to update balance for user_id: {user_id}")
+            if not update_project_balance:
+                raise Exception("Failed to update project balance")
+
+            logger.info()
+
+            # update organization balance
+            update_organization_balance = await db.fetchrow(
+                """
+                UPDATE organization_balance
+                SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP
+                WHERE organization_id = $2
+                RETURNING balance
+                """,
+                amount,
+                organization_id,
+            )
+            if not update_organization_balance:
+                raise Exception(f"Failed to update balance for organization")
             
-            logger.info(f"Incremented user balance {update_user_balance}")
+            logger.info(f"Incremented organization and project balance")
 
             # update user transactions
-            if invoice.get("amount_paid"):
-                status = "paid"
-            else:
-                status = "failed"
-            
+            status = "paid" if invoice.get("amount_paid") else "failed"
+
             transaction_record = await db.fetchrow(
                 """
-                INSERT INTO user_transactions (user_id, amount, status, invoice_number, invoice_url)
-                VALUES ($1, $2, $3, $4, $5)
+                INSERT INTO organization_transactions (
+                    organization_id, 
+                    user_id, 
+                    amount, 
+                    status, 
+                    invoice_number, 
+                    invoice_url
+                )
+                VALUES ($1, $2, $3, $4, $5, $6)
                 RETURNING *
                 """,
-                int(user_id),
+                organization_id,
+                user_id,
                 amount,
                 status,
                 invoice.get("invoice_number"),
@@ -63,7 +111,10 @@ async def increment_user_balance(amount, invoice, user_id: int, db: AsyncDB):
             
             logger.info(f"Updated user transaction record {transaction_record}")
 
-            return UserBalance(**dict(update_user_balance))
+            return (
+                ProjectBalance(**dict(update_project_balance)), 
+                OrganizationBalance(**dict(update_organization_balance))
+            )
 
     except Exception as e:
         logger.error("Failed to increment user balance")
@@ -95,73 +146,109 @@ async def decrement_user_balance(api_key, amount, token_count, db: AsyncDB):
                 raise Exception("Failed to deduct user balance")
             
             return deduct_user_balance
-    except Exception as e:
-        raise
+    except:
+        raise Exception("Failed to decrement organization balance")
 
 
-async def get_user_transactions(user_id: int, db: AsyncDB):
+async def get_organization_transactions(organization_id: int, db: AsyncDB):
     try:
-        user_transactions = await db.fetch(
+        organization_transactions = await db.fetch(
             """
             SELECT id, invoice_number, status, amount, created_at, invoice_url
-            FROM user_transactions
+            FROM organization_transactions
             WHERE user_id = $1
             """,
-            user_id
+            organization_id
         )
-        if not user_transactions:
-            logger.info("No previous User Transactions")
+        if not organization_transactions:
+            logger.info("No previous organization transactions")
             return None
-        
-        logger.info(f"Found user api keys: {user_transactions}")
-        return [UserTransactions(**dict(transaction)) for transaction in user_transactions]
-
+        return [OrganizationTransactions(**dict(transaction)) for transaction in organization_transactions]
     except:
-        logger.error("Failed to get user transactions")
-        raise
+        raise Exception("Failed to get organization transactions")
 
 
-async def get_user_balance(user_id: int, db: AsyncDB):
+async def get_organization_balance(organization_id: int, db: AsyncDB):
     try:
-        user_balance = await db.fetchrow(
+        organization_balance = await db.fetchrow(
             """
             SELECT balance
-            FROM user_balance
-            WHERE user_id = $1
+            FROM organization_balance
+            WHERE organization_id = $1
             """,
-            user_id
+            organization_id
         )
-        if not user_balance:
-            raise Exception("User balance not found")
-        logger.info(f"User balance: {user_balance}")
-        return UserBalance(**dict(user_balance))
+        if not organization_balance:
+            raise Exception("Organization balance not found")
+        return OrganizationBalance(**dict(organization_balance))
     except:
-        logger.error("Failed to get user balance")
-        raise
+        raise Exception("Failed to get organization balance")
 
-
-async def get_user_usage(user_id: int, start_date: date, end_date:date, db: AsyncDB):
+async def get_project_balance(project_id: int, db: AsyncDB):
     try:
-        user_usage = await db.fetch(
+        project_balance = await db.fetch_row(
             """
-            SELECT id, user_id, usage_date, token_count, request_count, total_spend
-            FROM user_token_usage
-            WHERE user_id = $1
+            SELECT balance
+            FROM project_balance
+            WHERE project_id = $1
+            """,
+            project_id
+        )
+        if not project_balance:
+            raise Exception("No project balance found")
+        return ProjectBalance(**dict(project_balance))
+    except:
+        raise Exception("Failed to get project balance")
+
+async def get_balances(project_id, organization_id, db: AsyncDB):
+    try:
+        async with db.transaction():
+            project_balance = await db.fetch_row(
+                """
+                SELECT balance
+                FROM project_balance
+                WHERE project_id = $1
+                """,
+                project_id
+            )
+            if not project_balance:
+                raise Exception("No project balance found")
+
+            organization_balance = await db.fetchrow(
+                """
+                SELECT balance
+                FROM organization_balance
+                WHERE organization_id = $1
+                """,
+                organization_id
+            )
+            if not organization_balance:
+                raise Exception("User balance not found")
+    except:
+        raise Exception("Failed to get balances")
+
+async def get_organization_token_usage(organization_id: int, start_date: date, end_date:date, db: AsyncDB):
+    try:
+        organization_usage = await db.fetch(
+            """
+            SELECT id, organization_id, user_id, usage_date, token_count, request_count, total_spend
+            FROM organization_token_usage
+            WHERE organization_id = $1
             AND usage_date BETWEEN $2 and $3
             ORDER BY usage_date DESC
             """,
-            user_id,
+            organization_id,
             start_date,
             end_date
         )
-        if not user_usage:
+        if not organization_usage:
             return []
-        return [UserUsage(**dict(usage)) for usage in user_usage]
+        return [OrganizationUsage(**dict(usage)) for usage in organization_usage]
     except:
-        raise
+        raise Exception("Failed to get organization usage")
 
 
-async def update_user_usage(user_id, token_count, amount, db: AsyncDB):
+async def update_token_usage(user_id, token_count, amount, db: AsyncDB):
     try:
         user_usage = await db.fetchrow(
             """

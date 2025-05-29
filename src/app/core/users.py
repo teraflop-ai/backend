@@ -7,8 +7,8 @@ from loguru import logger
 from secrets import token_urlsafe
 from app.schemas.users import (
     User, 
-    UserAPIKey, 
-    UserDeleteAPIKey
+    APIKey, 
+    DeleteAPIKey
 )
 from app.infisical.infisical import SESSION_SECRET_KEY
 import hashlib
@@ -30,8 +30,6 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 
 
 async def create_user(user: dict, db: AsyncDB):
-    """
-    """
     try:
         async with db.transaction():
             user_record = await db.fetchrow(
@@ -49,18 +47,6 @@ async def create_user(user: dict, db: AsyncDB):
                 raise
 
             logger.info(f"Created user: {user_record}")
-            user_id = user_record['id']
-            balance_record = await db.fetchrow(
-                """
-                INSERT INTO user_balance (user_id)
-                VALUES ($1)
-                RETURNING *
-                """,
-                user_id,
-            )
-            if not balance_record:
-                raise
-            logger.info(f"Created balance for user: {balance_record}")
             return User(**dict(user_record))
 
     except Exception as e:
@@ -69,8 +55,6 @@ async def create_user(user: dict, db: AsyncDB):
 
 
 async def get_user_by_email(email: str, db: AsyncDB):
-    """
-    """
     try:
         user_by_email = await db.fetchrow(
             """
@@ -93,8 +77,6 @@ async def get_user_by_email(email: str, db: AsyncDB):
 
 
 async def get_user_by_google_id(google_id: str, db: AsyncDB):
-    """
-    """
     try:
         user_by_google_id = await db.fetchrow(
             """
@@ -116,8 +98,6 @@ async def get_user_by_google_id(google_id: str, db: AsyncDB):
 
 
 async def get_user_by_id(user_id: int, db: AsyncDB):
-    """
-    """
     try:
         user_by_id = await db.fetchrow(
             """
@@ -139,8 +119,6 @@ async def get_user_by_id(user_id: int, db: AsyncDB):
 
 
 async def get_current_user(request: Request, db: AsyncDB) -> User:
-    """
-    """
     token = request.cookies.get("access_token")
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -174,8 +152,6 @@ async def get_current_user(request: Request, db: AsyncDB) -> User:
 
 
 async def delete_user(user_id: int, db: AsyncDB):
-    """
-    """
     try:
         deleted_user = await db.fetchrow(
             """
@@ -191,9 +167,8 @@ async def delete_user(user_id: int, db: AsyncDB):
         else:
             logger.error("Failed to delete user")
             raise
-    except Exception as e:
-        logger.error("Reeeeeee")
-        raise
+    except:
+        raise Exception("Failed to delete user")
         
 
 async def set_last_logged_in(user, db: AsyncDB):
@@ -211,8 +186,6 @@ async def set_last_logged_in(user, db: AsyncDB):
 
 
 async def get_user_by_api_key(api_key: str, db: AsyncDB):
-    """
-    """
     try:
         lookup_hash = hashlib.sha256(api_key.encode()).hexdigest()
         user_by_api_key = await db.fetchrow(
@@ -226,7 +199,7 @@ async def get_user_by_api_key(api_key: str, db: AsyncDB):
         if user_by_api_key:
             if verify_api_key(api_key, user_by_api_key["hashed_key"]):
                 logger.info("User found from api key")
-                return UserAPIKey(**dict(user_by_api_key))
+                return APIKey(**dict(user_by_api_key))
             else:
                 raise
         else:
@@ -272,11 +245,11 @@ async def create_user_api_key(api_key_name: str, user_id: int, db: AsyncDB):
         )
         if record:
             logger.info(f"Created user: {record} api key: {api_key}")
-            return {'api_key': api_key, 'record': UserAPIKey(**dict(record))}
+            return {'api_key': api_key, 'record': APIKey(**dict(record))}
         else:
             raise Exception("Failed to create user api key")
-    except Exception as e:
-        raise
+    except:
+        raise Exception("Failed to create API key")
 
 
 async def delete_user_api_key(api_key_id: int, user_id: int, db: AsyncDB):
@@ -290,46 +263,43 @@ async def delete_user_api_key(api_key_id: int, user_id: int, db: AsyncDB):
             int(api_key_id),
             user_id
         )
-        return UserDeleteAPIKey(**dict(user_api_key))
+        return DeleteAPIKey(**dict(user_api_key))
     except:
-        raise
+        raise Exception("Failed to delete API key")
 
 
-async def list_user_api_keys(user_id: int, db: AsyncDB):
+async def list_api_keys(organization_id: int, db: AsyncDB):
     try:
-        user_api_keys = await db.fetch(
+        api_keys = await db.fetch(
             """
             SELECT *
-            FROM user_api_keys
-            WHERE user_id = $1 AND is_active = TRUE
+            FROM api_keys
+            WHERE organization_id = $1 AND is_active = TRUE
             """,
-            user_id,
+            organization_id,
         )
-        if user_api_keys:
-            logger.info(f"Found user api keys: {user_api_keys}")
-            return [UserAPIKey(**dict(key)) for key in user_api_keys]
+        if api_keys:
+            logger.info(f"Found user api keys: {api_keys}")
+            return [APIKey(**dict(key)) for key in api_keys]
         else:
             logger.info("No api keys found")
             return None
     except:
-        raise
+        raise Exception("Failed to get API keys")
 
-async def create_organization():
+
+
+
+async def get_organization():
     pass
 
-async def get_user_organizations():
-    pass
 
-async def list_organization_members():
-    """
-    SELECT *
-    FROM 
-    """
-    pass
 
+    
 
 async def invite_user_to_organization():
     pass
 
-async def get_organization_projects():
+
+async def get_projects():
     pass

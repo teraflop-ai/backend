@@ -36,6 +36,36 @@ Drop db
 ```sql
 dropdb mydb
 ```
+
+Create Organizations Table
+```sql
+CREATE TABLE IF NOT EXISTS organizations (
+    id SERIAL PRIMARY KEY,
+    organization_name VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP 
+);
+```
+
+Create Projects Table
+```sql
+CREATE TABLE IF NOT EXISTS projects(
+    id SERIAL PRIMARY KEY,
+    organization_id INTEGER NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT fk_projects_org
+        FOREIGN KEY(organization_id)
+        REFERENCES organizations(id)
+        ON DELETE CASCADE,
+        
+    CONSTRAINT unique_organization_project_name
+        UNIQUE (organization_id, name)
+);
+```
+
 Create Users Table
 ```sql
 CREATE TABLE IF NOT EXISTS users (
@@ -47,7 +77,7 @@ CREATE TABLE IF NOT EXISTS users (
     last_selected_organization_id INTEGER,
     last_selected_project_id INTEGER,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    last_logged_in_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    last_logged_in_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_last_selected_organization
         FOREIGN KEY(last_selected_organization_id)
@@ -57,18 +87,10 @@ CREATE TABLE IF NOT EXISTS users (
     CONSTRAINT fk_last_selected_project
         FOREIGN KEY(last_selected_project_id)
         REFERENCES projects(id)
-        ON DELETE SET NULL;
+        ON DELETE SET NULL
 );
 ```
-Create Organizations Table
-```sql
-CREATE TABLE IF NOT EXISTS organizations (
-    id SERIAL PRIMARY KEY,
-    organization_name VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP 
-);
-```
+
 Create Organization Members Table
 ```sql
 CREATE TABLE IF NOT EXISTS organization_members (
@@ -185,24 +207,7 @@ CREATE TABLE IF NOT EXISTS organization_token_usage (
         UNIQUE (user_id, organization_id, usage_date)
 );
 ```
-Create Projects Table
-```sql
-CREATE TABLE IF NOT EXISTS projects(
-    id SERIAL PRIMARY KEY,
-    organization_id INTEGER NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    
-    CONSTRAINT fk_projects_org
-        FOREIGN KEY(organization_id)
-        REFERENCES organizations(id)
-        ON DELETE CASCADE,
-        
-    CONSTRAINT unique_organization_project_name
-        UNIQUE (organization_id, name)
-);
-```
+
 Create Projects Members Table
 ```sql
 CREATE TABLE IF NOT EXISTS project_members(
