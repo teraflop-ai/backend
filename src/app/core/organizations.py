@@ -1,4 +1,4 @@
-
+from app.dependencies.db import AsyncDB
 
 
 async def create_organization(user_id, organization_name, db: AsyncDB):
@@ -46,7 +46,7 @@ async def create_organization(user_id, organization_name, db: AsyncDB):
     except:
         raise Exception("Failed to create organization")
     
-    
+
 async def list_organization_members(db: AsyncDB):
     try:
         organization_members = await db.fetch(

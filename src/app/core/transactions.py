@@ -115,13 +115,11 @@ async def increment_balance(
                 ProjectBalance(**dict(update_project_balance)), 
                 OrganizationBalance(**dict(update_organization_balance))
             )
-
-    except Exception as e:
-        logger.error("Failed to increment user balance")
-        raise
+    except:
+        raise Exception("Failed to increment balance")
 
 
-async def decrement_user_balance(api_key, amount, token_count, db: AsyncDB):
+async def decrement_balance(api_key, amount, token_count, db: AsyncDB):
     try:
         async with db.transaction():
 
@@ -184,6 +182,7 @@ async def get_organization_balance(organization_id: int, db: AsyncDB):
     except:
         raise Exception("Failed to get organization balance")
 
+
 async def get_project_balance(project_id: int, db: AsyncDB):
     try:
         project_balance = await db.fetch_row(
@@ -199,6 +198,7 @@ async def get_project_balance(project_id: int, db: AsyncDB):
         return ProjectBalance(**dict(project_balance))
     except:
         raise Exception("Failed to get project balance")
+
 
 async def get_balances(project_id, organization_id, db: AsyncDB):
     try:
@@ -226,6 +226,7 @@ async def get_balances(project_id, organization_id, db: AsyncDB):
                 raise Exception("User balance not found")
     except:
         raise Exception("Failed to get balances")
+
 
 async def get_organization_token_usage(organization_id: int, start_date: date, end_date:date, db: AsyncDB):
     try:

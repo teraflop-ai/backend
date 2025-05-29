@@ -70,5 +70,6 @@ async def delete_key(request: Request, db: AsyncDB, current_user: CurrentUser):
     deleted_api_key = await delete_user_api_key(api_key_id, current_user.id, db)
     return msgspec.to_builtins(deleted_api_key)
 
+
 async def update_current_user():
     pass
