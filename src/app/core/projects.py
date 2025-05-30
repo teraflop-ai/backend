@@ -51,7 +51,7 @@ async def get_projects(organization_id: int, project_id: int, db: AsyncDB):
             SELECT *
             FROM projects
             WHERE organization_id = $1
-            AND project_id = $2
+            AND id = $2
             """,
             organization_id,
             project_id,

@@ -7,6 +7,8 @@ class Projects(Struct):
     id: int
     organization_id: int
     name: str
+    created_at: datetime
+    updated_at: datetime
 
 class ProjectUsage(Struct):
     id: int
