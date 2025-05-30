@@ -10,11 +10,11 @@ from starlette.config import Config
 from app.dependencies.users import CurrentUser
 from app.dependencies.db import AsyncDB
 from app.core.users import (
-    create_user_api_key,
+    create_api_key,
     list_api_keys,
     get_user_by_api_key,
     delete_user,
-    delete_user_api_key,
+    delete_api_key,
     check_user_has_organization
 )
 from app.core.organizations import (
@@ -88,26 +88,36 @@ async def delete_current_user(response: Response, db: AsyncDB, current_user: Cur
 
 
 @user_router.get("/list-api-keys")
-async def list_current_user_api_keys(db: AsyncDB, current_user: CurrentUser):
-    api_keys = await list_api_keys(current_user.id, db)
+async def list_organization_api_keys(db: AsyncDB, current_user: CurrentUser):
+    api_keys = await list_api_keys(current_user.last_selected_organization_id, db)
     return msgspec.to_builtins(api_keys)
 
 
 @user_router.post("/create-api-key")
-async def create_current_user_api_key(request: Request, db: AsyncDB, current_user: CurrentUser):
+async def create_organization_api_key(request: Request, db: AsyncDB, current_user: CurrentUser):
     body = await request.json()
     api_key_name = body.get("name")
     logger.info(f"API key name {api_key_name}")
-    created_api_key = await create_user_api_key(api_key_name, current_user.id, db)
+    created_api_key = await create_api_key(
+        api_key_name, 
+        current_user.last_selected_organization_id, 
+        current_user.id, 
+        db
+    )
     return msgspec.to_builtins(created_api_key)
 
 
 @user_router.delete("/delete-api-key")
-async def delete_key(request: Request, db: AsyncDB, current_user: CurrentUser):
+async def delete_organization_api_key(request: Request, db: AsyncDB, current_user: CurrentUser):
     body = await request.json()
     api_key_id = body.get("api_key_id")
     logger.info(f"User {current_user.id} deleting API key: {api_key_id}")
-    deleted_api_key = await delete_user_api_key(api_key_id, current_user.id, db)
+    deleted_api_key = await delete_api_key(
+        api_key_id, 
+        current_user.last_selected_organization_id, 
+        current_user.id, 
+        db
+    )
     return msgspec.to_builtins(deleted_api_key)
 
 

@@ -67,6 +67,8 @@ async def create_checkout_session(current_user: CurrentUser):
                         }
                     ],
                     'metadata': {
+                        'organization_id': str(current_user.last_selected_organization_id),
+                        'project_id': str(current_user.last_selected_project_id),
                         'user_id': str(current_user.id),
                         'purchase_type': 'credits'
                     },
@@ -77,6 +79,8 @@ async def create_checkout_session(current_user: CurrentUser):
                 }
             },
             metadata={
+                'organization_id': str(current_user.last_selected_organization_id),
+                'project_id': str(current_user.last_selected_project_id),
                 "user_id": str(current_user.id),
             }
         )
@@ -117,6 +121,8 @@ async def webhook_received(
         metadata = session.get("metadata")
         logger.info(f"Metadata: {metadata}")
         user_id = metadata.get("user_id")
+        organization_id = metadata.get("organization_id")
+        project_id = metadata.get("project_id")
         amount_cents = session.get("amount_total")
         amount_dollars = decimal.Decimal(amount_cents) / decimal.Decimal('100')
         logger.info(f"Amount to add: {amount_dollars}")
@@ -126,7 +132,9 @@ async def webhook_received(
                 update_user_balance = await increment_balance(
                     amount_dollars,
                     invoice, 
-                    user_id, 
+                    int(user_id),
+                    int(organization_id),
+                    int(project_id), 
                     db
                 )
                 if update_user_balance:
@@ -141,18 +149,21 @@ async def webhook_received(
         payment_intent = event["data"]["object"]
     return {"status": "success"}
 
+
 @payment_router.get('/get-balance')
 async def current_organization_balance(db: AsyncDB, current_user: CurrentUser):
-    balance = await get_organization_balance(current_user.id, db)
+    balance = await get_organization_balance(current_user.last_selected_organization_id, db)
     logger.info(balance)
     formatted_balance = round(balance.balance, 2)
     return {"balance": formatted_balance} 
 
+
 @payment_router.get("/get-transaction-history")
 async def current_organization_transaction_history(db: AsyncDB, current_user: CurrentUser):
-    transaction_history = await get_organization_transactions(current_user.id, db)
+    transaction_history = await get_organization_transactions(current_user.last_selected_organization_id, db)
     logger.info(f"Transaction History {transaction_history}")
     return msgspec.to_builtins(transaction_history)
+
 
 # @payment_router.get("/get-user-usage")
 # async def current_user_usage(

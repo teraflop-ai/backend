@@ -59,7 +59,7 @@ async def increment_balance(
                 UPDATE project_balance
                 SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP
                 WHERE project_id = $2
-                RETURNING balance
+                RETURNING id, project_id, balance
                 """,
                 amount,
                 project_id,
@@ -67,7 +67,7 @@ async def increment_balance(
             if not update_project_balance:
                 raise Exception("Failed to update project balance")
 
-            logger.info()
+            logger.info("Updated project balance")
 
             # update organization balance
             update_organization_balance = await db.fetchrow(
@@ -75,7 +75,7 @@ async def increment_balance(
                 UPDATE organization_balance
                 SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP
                 WHERE organization_id = $2
-                RETURNING balance
+                RETURNING id, organization_id, balance
                 """,
                 amount,
                 organization_id,
@@ -154,9 +154,9 @@ async def get_organization_transactions(organization_id: int, db: AsyncDB):
     try:
         organization_transactions = await db.fetch(
             """
-            SELECT id, invoice_number, status, amount, created_at, invoice_url
+            SELECT *
             FROM organization_transactions
-            WHERE user_id = $1
+            WHERE organization_id = $1
             """,
             organization_id
         )
@@ -172,7 +172,7 @@ async def get_organization_balance(organization_id: int, db: AsyncDB):
     try:
         organization_balance = await db.fetchrow(
             """
-            SELECT balance
+            SELECT id, organization_id, balance
             FROM organization_balance
             WHERE organization_id = $1
             """,

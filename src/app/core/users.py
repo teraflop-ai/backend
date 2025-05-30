@@ -247,20 +247,33 @@ def verify_api_key(api_key: str, hash: str):
     return hasher.verify(api_key, hash)
 
 
-async def create_user_api_key(api_key_name: str, user_id: int, db: AsyncDB):
+async def create_api_key(
+    api_key_name: str, 
+    organization_id: int, 
+    user_id: int, 
+    db: AsyncDB
+):
     api_key, key_prefix = generate_api_key()
     lookup_hash, hashed_api_key = create_api_key_hashes(api_key)
     try:
         record = await db.fetchrow(
             """
-            INSERT INTO user_api_keys (name, lookup_hash, hashed_key, user_id, key_prefix)
-            VALUES ($1, $2, $3, $4, $5)
+            INSERT INTO api_keys (
+                name, 
+                lookup_hash, 
+                hashed_key, 
+                user_id, 
+                organization_id, 
+                key_prefix
+            )
+            VALUES ($1, $2, $3, $4, $5, $6)
             RETURNING *;
             """,
             api_key_name,
             lookup_hash,
             hashed_api_key,
             user_id,
+            organization_id,
             key_prefix,
         )
         if record:
@@ -272,16 +285,24 @@ async def create_user_api_key(api_key_name: str, user_id: int, db: AsyncDB):
         raise Exception("Failed to create API key")
 
 
-async def delete_user_api_key(api_key_id: int, user_id: int, db: AsyncDB):
+async def delete_api_key(
+    api_key_id: int,
+    organization_id: int, 
+    user_id: int, 
+    db: AsyncDB
+):
     try:
         user_api_key = await db.fetchrow(
             """
-            DELETE FROM user_api_keys
-            WHERE id = $1 AND user_id = $2
+            DELETE FROM api_keys
+            WHERE id = $1 
+            AND user_id = $2 
+            AND organization_id = $3
             RETURNING id
             """,
             int(api_key_id),
-            user_id
+            user_id,
+            organization_id
         )
         return DeleteAPIKey(**dict(user_api_key))
     except:
