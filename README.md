@@ -122,6 +122,7 @@ CREATE TABLE IF NOT EXISTS api_keys (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL,
     organization_id INTEGER NOT NULL,
+    project_id INTEGER,
     name VARCHAR(255),
     hashed_key VARCHAR(255) UNIQUE NOT NULL,
     lookup_hash CHAR(64) NOT NULL UNIQUE,
@@ -138,6 +139,11 @@ CREATE TABLE IF NOT EXISTS api_keys (
     CONSTRAINT fk_api_keys_user
         FOREIGN KEY(user_id)
         REFERENCES users(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_api_keys_project
+        FOREIGN KEY(project_id)
+        REFERENCES projects(id)
         ON DELETE CASCADE 
 );
 ```
@@ -329,7 +335,14 @@ Change column type
 ```sql
 ALTER TABLE table_name ALTER COLUMN column_name TYPE varchar(255);
 ```
-
+Add foreign key constraint
+```sql
+ALTER TABLE table_name 
+ADD CONSTRAINT fk_constraint
+FOREIGN KEY (table_column)
+REFERENCES table_name(table_column)
+ON DELETE CASCADE;
+``
 # Fastapi
 
 Start Fastapi server

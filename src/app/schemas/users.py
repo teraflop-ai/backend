@@ -23,6 +23,7 @@ class APIKey(Struct):
     id: int
     user_id: int
     organization_id: int
+    project_id: int
     hashed_key: str
     lookup_hash: str
     key_prefix: str
@@ -30,6 +31,7 @@ class APIKey(Struct):
     last_used_at: datetime
     is_active: bool = True
     name: Optional[str] = None
+    project_name: Optional[str] = None
 
 class DeleteAPIKey(Struct):
     id: int

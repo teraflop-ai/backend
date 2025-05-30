@@ -1,5 +1,6 @@
 from app.schemas.projects import Projects
 from app.dependencies.db import AsyncDB
+from loguru import logger
 
 async def create_project(
     user_id: int, 
@@ -58,6 +59,7 @@ async def get_projects(organization_id: int, project_id: int, db: AsyncDB):
         )
         if not organization_projects:
             raise
+        logger.info(organization_projects)
         return [Projects(**dict(project)) for project in organization_projects]
     except:
         raise Exception("Failed to get organization projects")

@@ -1,5 +1,6 @@
+from app.schemas.organizations import Organizations
 from app.dependencies.db import AsyncDB
-
+from loguru import logger
 
 async def create_organization(user_id: id, organization_name: str, db: AsyncDB):
     try:
@@ -83,8 +84,22 @@ async def list_organization_members(organization_id, db: AsyncDB):
         raise Exception("Failed to get organization members")
 
 
-async def get_organizations():
-    pass
+async def get_organizations(organization_id: int, db: AsyncDB):
+    try:
+        organizations = await db.fetch(
+            """
+            SELECT *
+            FROM organizations
+            WHERE id = $1
+            """,
+            organization_id,
+        )
+        if not organizations:
+            raise
+        logger.info(organizations)
+        return [Organizations(**dict(organization)) for organization in organizations]
+    except:
+        raise Exception("Failed to get organization projects")
 
 
 async def invite_member_to_organization():

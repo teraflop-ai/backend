@@ -6,6 +6,8 @@ from decimal import Decimal
 class Organizations(Struct):
     id: int
     organization_name: str
+    created_at: datetime
+    updated_at: datetime
 
 class OrganizationTransactions(Struct):
     id: int

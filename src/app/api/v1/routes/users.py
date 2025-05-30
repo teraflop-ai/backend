@@ -19,7 +19,8 @@ from app.core.users import (
 )
 from app.core.organizations import (
     check_if_member_exists,
-    create_organization
+    create_organization,
+    get_organizations
 )
 from app.core.projects import create_project, get_projects
 from app.schemas.users import WelcomePayload
@@ -100,7 +101,8 @@ async def create_organization_api_key(request: Request, db: AsyncDB, current_use
     logger.info(f"API key name {api_key_name}")
     created_api_key = await create_api_key(
         api_key_name, 
-        current_user.last_selected_organization_id, 
+        current_user.last_selected_organization_id,
+        current_user.last_selected_project_id, 
         current_user.id, 
         db
     )
@@ -114,7 +116,8 @@ async def delete_organization_api_key(request: Request, db: AsyncDB, current_use
     logger.info(f"User {current_user.id} deleting API key: {api_key_id}")
     deleted_api_key = await delete_api_key(
         api_key_id, 
-        current_user.last_selected_organization_id, 
+        current_user.last_selected_organization_id,
+        current_user.last_selected_project_id, 
         current_user.id, 
         db
     )
@@ -129,9 +132,13 @@ async def get_organization_projects(db: AsyncDB, current_user: CurrentUser):
     )
     return msgspec.to_builtins(projects)
 
-@user_router.get("")
-async def get_user_organizations():
-    pass
+@user_router.get("/get-organizations")
+async def get_user_organizations(db: AsyncDB, current_user: CurrentUser):
+    organizations = await get_organizations(
+        current_user.last_selected_organization_id,
+        db
+    )
+    return msgspec.to_builtins(organizations)
 
 
 async def update_current_user():

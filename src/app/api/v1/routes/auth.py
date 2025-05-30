@@ -118,7 +118,7 @@ async def auth_google_callback(request: Request, db: AsyncDB):
 
     # redirect to user dashboard
     logger.info("Redirecting")
-    response = RedirectResponse(url=NEXTJS_FRONTEND_URL + "/dashboard")
+    response = RedirectResponse(url=NEXTJS_FRONTEND_URL + "/dashboard/organization/general")
 
     # set auth cookie token
     logger.info("Setting authentication cookie")

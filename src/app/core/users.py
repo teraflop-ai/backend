@@ -249,7 +249,8 @@ def verify_api_key(api_key: str, hash: str):
 
 async def create_api_key(
     api_key_name: str, 
-    organization_id: int, 
+    organization_id: int,
+    project_id: int, 
     user_id: int, 
     db: AsyncDB
 ):
@@ -263,10 +264,11 @@ async def create_api_key(
                 lookup_hash, 
                 hashed_key, 
                 user_id, 
-                organization_id, 
+                organization_id,
+                project_id, 
                 key_prefix
             )
-            VALUES ($1, $2, $3, $4, $5, $6)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
             RETURNING *;
             """,
             api_key_name,
@@ -274,6 +276,7 @@ async def create_api_key(
             hashed_api_key,
             user_id,
             organization_id,
+            project_id,
             key_prefix,
         )
         if record:
@@ -287,7 +290,8 @@ async def create_api_key(
 
 async def delete_api_key(
     api_key_id: int,
-    organization_id: int, 
+    organization_id: int,
+    project_id: int, 
     user_id: int, 
     db: AsyncDB
 ):
@@ -298,11 +302,13 @@ async def delete_api_key(
             WHERE id = $1 
             AND user_id = $2 
             AND organization_id = $3
+            AND project_id = $4
             RETURNING id
             """,
             int(api_key_id),
             user_id,
-            organization_id
+            organization_id,
+            project_id,
         )
         return DeleteAPIKey(**dict(user_api_key))
     except:
@@ -313,9 +319,13 @@ async def list_api_keys(organization_id: int, db: AsyncDB):
     try:
         api_keys = await db.fetch(
             """
-            SELECT *
-            FROM api_keys
-            WHERE organization_id = $1 AND is_active = TRUE
+            SELECT 
+                ak.*,
+                p.name as project_name
+            FROM api_keys ak
+            LEFT JOIN projects p ON ak.project_id = p.id
+            WHERE ak.organization_id = $1 AND ak.is_active = TRUE
+            ORDER BY ak.created_at DESC
             """,
             organization_id,
         )
@@ -329,6 +339,26 @@ async def list_api_keys(organization_id: int, db: AsyncDB):
         raise Exception("Failed to get API keys")
 
     
-
+async def list_project_api_keys(organization_id: int, project_id: int, db: AsyncDB):
+    try:
+        api_keys = await db.fetch(
+            """
+            SELECT *
+            FROM api_keys
+            WHERE organization_id = $1 
+            AND project_id = $2 
+            AND is_active = TRUE
+            """,
+            organization_id,
+            project_id
+        )
+        if api_keys:
+            logger.info(f"Found user api keys: {api_keys}")
+            return [APIKey(**dict(key)) for key in api_keys]
+        else:
+            logger.info("No api keys found")
+            return None
+    except:
+        raise Exception("Failed to get API keys")
 
 
