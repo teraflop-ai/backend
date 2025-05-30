@@ -1,18 +1,14 @@
 from loguru import logger
 from fastapi import (
     APIRouter,
-    status, 
     Request, 
-    HTTPException, 
     Response,
 )
-from starlette.config import Config
 from app.dependencies.users import CurrentUser
 from app.dependencies.db import AsyncDB
 from app.core.users import (
     create_api_key,
     list_api_keys,
-    get_user_by_api_key,
     delete_user,
     delete_api_key,
     check_user_has_organization
@@ -20,9 +16,8 @@ from app.core.users import (
 from app.core.organizations import (
     check_if_member_exists,
     create_organization,
-    get_organizations
 )
-from app.core.projects import create_project, get_projects
+from app.core.projects import create_initial_project
 from app.schemas.users import WelcomePayload
 import msgspec
 from typing import List
@@ -64,7 +59,7 @@ async def user_onboarding(payload: WelcomePayload, db: AsyncDB, current_user: Cu
             db
         )
         logger.info(f"Organization info: {organization}")
-        await create_project(
+        await create_initial_project(
             current_user.id, 
             payload.project,
             organization["id"], 
@@ -122,23 +117,6 @@ async def delete_organization_api_key(request: Request, db: AsyncDB, current_use
         db
     )
     return msgspec.to_builtins(deleted_api_key)
-
-@user_router.get("/get-projects")
-async def get_organization_projects(db: AsyncDB, current_user: CurrentUser):
-    projects = await get_projects(
-        current_user.last_selected_organization_id,
-        current_user.last_selected_project_id, 
-        db
-    )
-    return msgspec.to_builtins(projects)
-
-@user_router.get("/get-organizations")
-async def get_user_organizations(db: AsyncDB, current_user: CurrentUser):
-    organizations = await get_organizations(
-        current_user.last_selected_organization_id,
-        db
-    )
-    return msgspec.to_builtins(organizations)
 
 
 async def update_current_user():

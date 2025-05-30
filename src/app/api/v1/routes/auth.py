@@ -17,7 +17,7 @@ from app.core.users import (
 FASTAPI_BACKEND_URL="http://localhost:8000"
 NEXTJS_FRONTEND_URL="http://localhost:3000"
 
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 auth_router = APIRouter(
     prefix="/auth",

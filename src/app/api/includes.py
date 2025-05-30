@@ -1,7 +1,13 @@
 from fastapi.responses import JSONResponse
 from fastapi import APIRouter
 from app.api.v1.routes import (
-    auth, users, stripe, utils, embedding
+    auth, 
+    users, 
+    stripe, 
+    utils, 
+    embedding, 
+    projects,
+    organizations
 )
 from typing import Any
 import msgspec
@@ -17,3 +23,5 @@ api_router.include_router(users.user_router)
 api_router.include_router(stripe.payment_router)
 api_router.include_router(utils.health_router)
 api_router.include_router(embedding.embedding_router)
+api_router.include_router(projects.project_router)
+api_router.include_router(organizations.organization_router)

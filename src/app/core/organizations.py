@@ -102,5 +102,27 @@ async def get_organizations(organization_id: int, db: AsyncDB):
         raise Exception("Failed to get organization projects")
 
 
+async def select_organization(
+    project_id: int,
+    organization_id: int,
+    user_id, 
+    db: AsyncDB
+):
+    try:
+        await db.execute(
+            """
+            UPDATE users
+            SET last_selected_project_id = $1,
+                last_selected_organization_id = $2
+            WHERE id =$3
+            """,
+            project_id,
+            organization_id,
+            user_id,
+        )
+    except:
+        raise Exception("Failed to select project")
+    
+
 async def invite_member_to_organization():
     pass
