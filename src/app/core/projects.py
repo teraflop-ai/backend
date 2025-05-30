@@ -1,3 +1,4 @@
+from app.schemas.projects import Projects
 from app.dependencies.db import AsyncDB
 
 async def create_project(
@@ -41,3 +42,22 @@ async def create_project(
             return created_project
     except:
         raise Exception("Failed to create project")
+    
+
+async def get_projects(organization_id: int, project_id: int, db: AsyncDB):
+    try:
+        organization_projects = await db.fetch(
+            """
+            SELECT *
+            FROM projects
+            WHERE organization_id = $1
+            AND project_id = $2
+            """,
+            organization_id,
+            project_id,
+        )
+        if not organization_projects:
+            raise
+        return [Projects(**dict(project)) for project in organization_projects]
+    except:
+        raise Exception("Failed to get organization projects")

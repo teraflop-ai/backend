@@ -21,7 +21,7 @@ from app.core.organizations import (
     check_if_member_exists,
     create_organization
 )
-from app.core.projects import create_project
+from app.core.projects import create_project, get_projects
 from app.schemas.users import WelcomePayload
 import msgspec
 from typing import List
@@ -119,6 +119,19 @@ async def delete_organization_api_key(request: Request, db: AsyncDB, current_use
         db
     )
     return msgspec.to_builtins(deleted_api_key)
+
+@user_router.get("/get-projects")
+async def get_organization_projects(db: AsyncDB, current_user: CurrentUser):
+    projects = await get_projects(
+        current_user.last_selected_organization_id,
+        current_user.last_selected_project_id, 
+        db
+    )
+    return msgspec.to_builtins(projects)
+
+@user_router.get("")
+async def get_user_organizations():
+    pass
 
 
 async def update_current_user():

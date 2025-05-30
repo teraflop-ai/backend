@@ -328,19 +328,7 @@ async def list_api_keys(organization_id: int, db: AsyncDB):
     except:
         raise Exception("Failed to get API keys")
 
-
-
-
-async def get_organization():
-    pass
-
-
-
     
 
-async def invite_user_to_organization():
-    pass
 
 
-async def get_projects():
-    pass
