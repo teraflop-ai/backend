@@ -1,7 +1,7 @@
 from app.dependencies.db import AsyncDB
 
 
-async def create_organization(user_id, organization_name, db: AsyncDB):
+async def create_organization(user_id: id, organization_name: str, db: AsyncDB):
     try:
         async with db.transaction():
             # Create the organization
@@ -43,11 +43,30 @@ async def create_organization(user_id, organization_name, db: AsyncDB):
                 created_organization["id"],
                 user_id
             )
+            return created_organization
     except:
         raise Exception("Failed to create organization")
-    
 
-async def list_organization_members(db: AsyncDB):
+
+async def check_if_member_exists(user_id: int, db: AsyncDB):
+    """
+    Checks to see if member is already part of an organization.
+    """
+    try:
+        already_member = await db.fetchrow(
+            """
+            SELECT *
+            FROM organization_members
+            WHERE user_id = $1
+            """,
+            user_id
+        )
+        return already_member
+    except:
+        raise Exception("Failed to check if member exists")
+
+
+async def list_organization_members(organization_id, db: AsyncDB):
     try:
         organization_members = await db.fetch(
             """
@@ -55,6 +74,7 @@ async def list_organization_members(db: AsyncDB):
             FROM organization_members
             WHERE organization_id = $1
             """,
+            organization_id
         )
         if not organization_members:
             raise Exception("Could not find any members")

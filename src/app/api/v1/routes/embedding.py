@@ -6,7 +6,7 @@ from fastapi import (
 )
 from app.dependencies.db import AsyncDB
 import decimal
-from app.core.transactions import decrement_user_balance
+from app.core.transactions import decrement_balance
 from app.core.inference import Baseten
 from loguru import logger
 from flash_tokenizer import BertTokenizerFlash
@@ -39,7 +39,7 @@ async def embed_text(
     except:
         raise Exception("Failed to intiailize embedding endpoint call")
 
-    await decrement_user_balance(api_key, amount, token_count, db)
+    await decrement_balance(api_key, amount, token_count, db)
 
     embedding = await baseten_embed(request.model, request.input)
 

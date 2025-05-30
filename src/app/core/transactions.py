@@ -1,11 +1,13 @@
 import stripe
 from datetime import date
 from app.core.users import get_user_by_api_key
-from app.schemas.users import (
-    ProjectBalance, 
+from app.schemas.organizations import (
     OrganizationBalance, 
     OrganizationTransactions, 
     OrganizationUsage,
+)
+from app.schemas.projects import (
+    ProjectBalance, 
 )
 from app.dependencies.db import AsyncDB
 from loguru import logger

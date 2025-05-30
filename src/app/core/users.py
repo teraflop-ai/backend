@@ -210,6 +210,26 @@ async def get_user_by_api_key(api_key: str, db: AsyncDB):
         raise
 
 
+async def check_user_has_organization(user_id: int, db: AsyncDB):
+    """
+    Check if the user has an organization.
+    For when authenticating first time sign up flow.
+    """
+    try:
+        user_organization = await db.fetchrow(
+            """
+            SELECT organization_id
+            FROM organization_members
+            WHERE user_id = $1
+            LIMIT 1;
+            """,
+            user_id
+        )
+        return user_organization
+    except:
+        raise Exception("Failed to check for user organizations")
+
+
 def generate_api_key():
     secret = token_urlsafe(32)
     prefix = "tf_"

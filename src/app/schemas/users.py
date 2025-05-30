@@ -2,6 +2,7 @@ from datetime import datetime, date
 from msgspec import Struct
 from typing import Optional
 from decimal import Decimal
+from pydantic import BaseModel
 
 class User(Struct):
     id: int
@@ -13,6 +14,10 @@ class User(Struct):
     last_selected_organization_id: int
     last_selected_project_id: int
     google_id: Optional[str] = None 
+
+class WelcomePayload(BaseModel):
+    organization: str
+    project: str
 
 class APIKey(Struct):
     id: int
