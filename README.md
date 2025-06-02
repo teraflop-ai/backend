@@ -59,10 +59,7 @@ CREATE TABLE IF NOT EXISTS projects(
     CONSTRAINT fk_projects_org
         FOREIGN KEY(organization_id)
         REFERENCES organizations(id)
-        ON DELETE CASCADE,
-        
-    CONSTRAINT unique_organization_project_name
-        UNIQUE (organization_id, name)
+        ON DELETE CASCADE
 );
 ```
 
@@ -342,7 +339,13 @@ ADD CONSTRAINT fk_constraint
 FOREIGN KEY (table_column)
 REFERENCES table_name(table_column)
 ON DELETE CASCADE;
-``
+```
+Drop table constraint
+```sql
+ALTER TABLE table_name 
+DROP CONSTRAINT table_constraint;
+```
+
 # Fastapi
 
 Start Fastapi server

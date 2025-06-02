@@ -108,17 +108,16 @@ async def create_new_project(
         raise Exception("Failed to create project")
 
 
-async def get_projects(organization_id: int, project_id: int, db: AsyncDB):
+async def get_projects(organization_id: int, db: AsyncDB):
     try:
         organization_projects = await db.fetch(
             """
             SELECT *
             FROM projects
             WHERE organization_id = $1
-            AND id = $2
+            ORDER BY created_at DESC
             """,
             organization_id,
-            project_id,
         )
         if not organization_projects:
             raise
@@ -138,7 +137,7 @@ async def select_project(
         await db.execute(
             """
             UPDATE users
-            SET last_selected_project_id = $1
+            SET last_selected_project_id = $1,
                 last_selected_organization_id = $2
             WHERE id =$3
             """,
