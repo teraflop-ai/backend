@@ -1,3 +1,4 @@
+from app.core.apikeys import generate_api_key, create_api_key_hashes
 from app.schemas.organizations import Organizations
 from app.dependencies.db import AsyncDB
 from app.schemas.organizations import OrganizationAPIKey
@@ -147,6 +148,48 @@ async def list_organization_api_keys(organization_id: int, db: AsyncDB):
             return None
     except:
         raise Exception("Failed to get API keys")
+
+
+async def create_organization_api_key(
+    api_key_name: str, 
+    organization_id: int,
+    project_id: int, 
+    user_id: int, 
+    db: AsyncDB
+):
+    api_key, key_prefix = generate_api_key()
+    lookup_hash, hashed_api_key = create_api_key_hashes(api_key)
+    try:
+        record = await db.fetchrow(
+            """
+            INSERT INTO api_keys (
+                name, 
+                lookup_hash, 
+                hashed_key, 
+                user_id, 
+                organization_id,
+                project_id, 
+                key_prefix
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            RETURNING *;
+            """,
+            api_key_name,
+            lookup_hash,
+            hashed_api_key,
+            user_id,
+            organization_id,
+            project_id,
+            key_prefix,
+        )
+        if record:
+            logger.info(f"Created user: {record} api key: {api_key}")
+            return {'api_key': api_key, 'record': OrganizationAPIKey(**dict(record))}
+        else:
+            raise Exception("Failed to create user api key")
+    except:
+        raise Exception("Failed to create API key")
+
 
 async def invite_member_to_organization():
     pass

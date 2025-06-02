@@ -9,7 +9,8 @@ from app.core.projects import (
     create_new_project, 
     get_projects,
     select_project,
-    list_project_api_keys
+    list_project_api_keys,
+    create_project_api_key
 )
 import msgspec
 
@@ -61,6 +62,7 @@ async def select_current_project(
     )
     return selected_project
 
+
 @project_router.get("/list-api-keys")
 async def list_all_project_api_keys(db: AsyncDB, current_user: CurrentUser):
     api_keys = await list_project_api_keys(
@@ -69,3 +71,23 @@ async def list_all_project_api_keys(db: AsyncDB, current_user: CurrentUser):
         db
     )
     return msgspec.to_builtins(api_keys)
+
+
+@project_router.post("/create-api-key")
+async def create_project_api_key_(
+    request: Request, 
+    db: AsyncDB, 
+    current_user: CurrentUser
+):
+    body = await request.json()
+    api_key_name = body.get("name")
+    project_id = body.get("project_id")
+    logger.info(f"API key name {api_key_name}")
+    created_api_key = await create_project_api_key(
+        api_key_name, 
+        current_user.last_selected_organization_id,
+        project_id, 
+        current_user.id, 
+        db
+    )
+    return msgspec.to_builtins(created_api_key)

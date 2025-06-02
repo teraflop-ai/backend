@@ -1,4 +1,5 @@
 from fastapi import Request, HTTPException, status
+from app.core.apikeys import verify_api_key
 from app.dependencies.db import AsyncDB
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
@@ -230,64 +231,6 @@ async def check_user_has_organization(user_id: int, db: AsyncDB):
         raise Exception("Failed to check for user organizations")
 
 
-def generate_api_key():
-    secret = token_urlsafe(32)
-    prefix = "tf_"
-    api_key = f"{prefix}{secret}"
-    return api_key, prefix   
-
-
-def create_api_key_hashes(api_key: str):
-    lookup_hash = hashlib.sha256(api_key.encode()).hexdigest()
-    verify_hash = hasher.hash(api_key)
-    return lookup_hash, verify_hash
-
-
-def verify_api_key(api_key: str, hash: str):
-    return hasher.verify(api_key, hash)
-
-
-async def create_api_key(
-    api_key_name: str, 
-    organization_id: int,
-    project_id: int, 
-    user_id: int, 
-    db: AsyncDB
-):
-    api_key, key_prefix = generate_api_key()
-    lookup_hash, hashed_api_key = create_api_key_hashes(api_key)
-    try:
-        record = await db.fetchrow(
-            """
-            INSERT INTO api_keys (
-                name, 
-                lookup_hash, 
-                hashed_key, 
-                user_id, 
-                organization_id,
-                project_id, 
-                key_prefix
-            )
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
-            RETURNING *;
-            """,
-            api_key_name,
-            lookup_hash,
-            hashed_api_key,
-            user_id,
-            organization_id,
-            project_id,
-            key_prefix,
-        )
-        if record:
-            logger.info(f"Created user: {record} api key: {api_key}")
-            return {'api_key': api_key, 'record': APIKey(**dict(record))}
-        else:
-            raise Exception("Failed to create user api key")
-    except:
-        raise Exception("Failed to create API key")
-
-
 async def delete_api_key(
     api_key_id: int,
     organization_id: int,
@@ -311,20 +254,19 @@ async def delete_api_key(
     except:
         raise Exception("Failed to delete API key")
 
-
-# async def list_api_keys(organization_id: int, db: AsyncDB):
+    
+# async def list_project_api_keys(organization_id: int, project_id: int, db: AsyncDB):
 #     try:
 #         api_keys = await db.fetch(
 #             """
-#             SELECT 
-#                 ak.*,
-#                 p.name as project_name
-#             FROM api_keys ak
-#             LEFT JOIN projects p ON ak.project_id = p.id
-#             WHERE ak.organization_id = $1 AND ak.is_active = TRUE
-#             ORDER BY ak.created_at DESC
+#             SELECT *
+#             FROM api_keys
+#             WHERE organization_id = $1 
+#             AND project_id = $2 
+#             AND is_active = TRUE
 #             """,
 #             organization_id,
+#             project_id
 #         )
 #         if api_keys:
 #             logger.info(f"Found user api keys: {api_keys}")
@@ -334,28 +276,5 @@ async def delete_api_key(
 #             return None
 #     except:
 #         raise Exception("Failed to get API keys")
-
-    
-async def list_project_api_keys(organization_id: int, project_id: int, db: AsyncDB):
-    try:
-        api_keys = await db.fetch(
-            """
-            SELECT *
-            FROM api_keys
-            WHERE organization_id = $1 
-            AND project_id = $2 
-            AND is_active = TRUE
-            """,
-            organization_id,
-            project_id
-        )
-        if api_keys:
-            logger.info(f"Found user api keys: {api_keys}")
-            return [APIKey(**dict(key)) for key in api_keys]
-        else:
-            logger.info("No api keys found")
-            return None
-    except:
-        raise Exception("Failed to get API keys")
 
 
