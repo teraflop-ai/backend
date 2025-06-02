@@ -291,7 +291,6 @@ async def create_api_key(
 async def delete_api_key(
     api_key_id: int,
     organization_id: int,
-    project_id: int, 
     user_id: int, 
     db: AsyncDB
 ):
@@ -302,41 +301,39 @@ async def delete_api_key(
             WHERE id = $1 
             AND user_id = $2 
             AND organization_id = $3
-            AND project_id = $4
             RETURNING id
             """,
             int(api_key_id),
             user_id,
             organization_id,
-            project_id,
         )
         return DeleteAPIKey(**dict(user_api_key))
     except:
         raise Exception("Failed to delete API key")
 
 
-async def list_api_keys(organization_id: int, db: AsyncDB):
-    try:
-        api_keys = await db.fetch(
-            """
-            SELECT 
-                ak.*,
-                p.name as project_name
-            FROM api_keys ak
-            LEFT JOIN projects p ON ak.project_id = p.id
-            WHERE ak.organization_id = $1 AND ak.is_active = TRUE
-            ORDER BY ak.created_at DESC
-            """,
-            organization_id,
-        )
-        if api_keys:
-            logger.info(f"Found user api keys: {api_keys}")
-            return [APIKey(**dict(key)) for key in api_keys]
-        else:
-            logger.info("No api keys found")
-            return None
-    except:
-        raise Exception("Failed to get API keys")
+# async def list_api_keys(organization_id: int, db: AsyncDB):
+#     try:
+#         api_keys = await db.fetch(
+#             """
+#             SELECT 
+#                 ak.*,
+#                 p.name as project_name
+#             FROM api_keys ak
+#             LEFT JOIN projects p ON ak.project_id = p.id
+#             WHERE ak.organization_id = $1 AND ak.is_active = TRUE
+#             ORDER BY ak.created_at DESC
+#             """,
+#             organization_id,
+#         )
+#         if api_keys:
+#             logger.info(f"Found user api keys: {api_keys}")
+#             return [APIKey(**dict(key)) for key in api_keys]
+#         else:
+#             logger.info("No api keys found")
+#             return None
+#     except:
+#         raise Exception("Failed to get API keys")
 
     
 async def list_project_api_keys(organization_id: int, project_id: int, db: AsyncDB):

@@ -1,5 +1,6 @@
 from app.schemas.organizations import Organizations
 from app.dependencies.db import AsyncDB
+from app.schemas.organizations import OrganizationAPIKey
 from loguru import logger
 
 async def create_organization(user_id: id, organization_name: str, db: AsyncDB):
@@ -123,6 +124,29 @@ async def select_organization(
     except:
         raise Exception("Failed to select project")
     
+
+async def list_organization_api_keys(organization_id: int, db: AsyncDB):
+    try:
+        api_keys = await db.fetch(
+            """
+            SELECT 
+                ak.*,
+                p.name as project_name
+            FROM api_keys ak
+            LEFT JOIN projects p ON ak.project_id = p.id
+            WHERE ak.organization_id = $1 AND ak.is_active = TRUE
+            ORDER BY ak.created_at DESC
+            """,
+            organization_id,
+        )
+        if api_keys:
+            logger.info(f"Found user api keys: {api_keys}")
+            return [OrganizationAPIKey(**dict(key)) for key in api_keys]
+        else:
+            logger.info("No api keys found")
+            return None
+    except:
+        raise Exception("Failed to get API keys")
 
 async def invite_member_to_organization():
     pass

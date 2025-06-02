@@ -8,10 +8,10 @@ from app.dependencies.db import AsyncDB
 from app.core.projects import (
     create_new_project, 
     get_projects,
-    select_project
+    select_project,
+    list_project_api_keys
 )
 import msgspec
-from typing import List
 
 
 project_router = APIRouter(
@@ -45,7 +45,11 @@ async def create_project(request: Request, db: AsyncDB, current_user: CurrentUse
 
 
 @project_router.put("/select-project")
-async def select_a_project(request: Request, current_user: CurrentUser, db: AsyncDB):
+async def select_current_project(
+    request: Request, 
+    current_user: CurrentUser, 
+    db: AsyncDB
+):
     body = await request.json()
     project_id = body.get("project_id")
     organization_id = body.get("organization_id")
@@ -56,3 +60,12 @@ async def select_a_project(request: Request, current_user: CurrentUser, db: Asyn
         db
     )
     return selected_project
+
+@project_router.get("/list-api-keys")
+async def list_all_project_api_keys(db: AsyncDB, current_user: CurrentUser):
+    api_keys = await list_project_api_keys(
+        current_user.last_selected_organization_id,
+        current_user.last_selected_project_id, 
+        db
+    )
+    return msgspec.to_builtins(api_keys)

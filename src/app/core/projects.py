@@ -1,5 +1,6 @@
 from app.schemas.projects import Projects
 from app.dependencies.db import AsyncDB
+from app.schemas.projects import ProjectAPIKey
 from loguru import logger
 from fastapi import HTTPException
 
@@ -147,3 +148,29 @@ async def select_project(
         )
     except:
         raise Exception("Failed to select project")
+    
+async def list_project_api_keys(organization_id: int, project_id: int, db: AsyncDB):
+    try:
+        api_keys = await db.fetch(
+            """
+            SELECT 
+                ak.*,
+                p.name as project_name
+            FROM api_keys ak
+            LEFT JOIN projects p ON ak.project_id = p.id
+            WHERE ak.organization_id = $1
+            AND ak.project_id = $2 
+            AND ak.is_active = TRUE
+            ORDER BY ak.created_at DESC
+            """,
+            organization_id,
+            project_id,
+        )
+        if api_keys:
+            logger.info(f"Found user api keys: {api_keys}")
+            return [ProjectAPIKey(**dict(key)) for key in api_keys]
+        else:
+            logger.info("No api keys found")
+            return None
+    except:
+        raise Exception("Failed to get API keys")
