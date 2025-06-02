@@ -217,3 +217,14 @@ async def create_project_api_key(
             raise Exception("Failed to create user api key")
     except:
         raise Exception("Failed to create API key")
+    
+
+async def update_project_name(db: AsyncDB):
+    try:
+        updated_project_name = await db.fetchrow()
+    except:
+        raise
+
+
+async def get_project_members():
+    pass
