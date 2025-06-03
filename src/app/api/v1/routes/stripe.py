@@ -50,7 +50,7 @@ async def create_checkout_session(current_user: CurrentUser):
                     "quantity": 1,
                 }
             ],
-            success_url=domain_prefix + "/dashboard/billing", #+ "/payment-success?session_id={CHECKOUT_SESSION_ID}",
+            success_url=domain_prefix + "/dashboard/organization/billing/overview", #+ "/payment-success?session_id={CHECKOUT_SESSION_ID}",
             cancel_url=domain_prefix + "/payment-cancelled",
             mode="payment",
             automatic_tax={

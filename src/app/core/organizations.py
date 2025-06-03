@@ -1,7 +1,10 @@
 from app.core.apikeys import generate_api_key, create_api_key_hashes
-from app.schemas.organizations import Organizations
 from app.dependencies.db import AsyncDB
-from app.schemas.organizations import OrganizationAPIKey
+from app.schemas.organizations import (
+    Organizations,
+    OrganizationAPIKey,
+    OrganizationMembers,
+)
 from loguru import logger
 
 async def create_organization(user_id: id, organization_name: str, db: AsyncDB):
@@ -98,7 +101,6 @@ async def get_organizations(organization_id: int, db: AsyncDB):
         )
         if not organizations:
             raise
-        logger.info(organizations)
         return [Organizations(**dict(organization)) for organization in organizations]
     except:
         raise Exception("Failed to get organization projects")
@@ -191,9 +193,31 @@ async def create_organization_api_key(
         raise Exception("Failed to create API key")
 
 
-async def get_organization_members():
-    pass
+async def get_organization_members(organization_id: int, db: AsyncDB):
+    try:
+        organization_members = db.fetch(
+            """
+            SELECT *
+            FROM organization_members
+            WHERE organization_id = $1
+            """,
+            organization_id
+        )
+        if not organization_members:
+            raise
+        return [OrganizationMembers(**dict(member)) for member in organization_members]
+    except:
+        raise
 
+async def update_organization_name(db: AsyncDB):
+    try:
+        updated_organization_name = await db.execute(
+            """
+
+            """
+        )
+    except:
+        raise
 
 async def invite_member_to_organization():
     pass

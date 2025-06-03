@@ -33,6 +33,7 @@ class OrganizationMembers(Struct):
     organization_id: int
     user_id: int
     role: str
+    joined_at: datetime
 
 class OrganizationBalance(Struct):
     id: int

@@ -63,3 +63,7 @@ async def create_organization_api_key_(request: Request, db: AsyncDB, current_us
         db
     )
     return msgspec.to_builtins(created_api_key)
+
+@organization_router.put("/update-organization-name")
+async def update_organization_name():
+    pass
