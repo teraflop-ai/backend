@@ -213,7 +213,9 @@ async def update_organization_name(db: AsyncDB):
     try:
         updated_organization_name = await db.execute(
             """
-
+            UPDATE
+            SET
+            WHERE
             """
         )
     except:
