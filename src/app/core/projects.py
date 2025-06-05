@@ -68,6 +68,20 @@ async def create_new_project(
             if not member_check:
                 raise HTTPException(status_code=403, detail="Not a member of this organization")
             
+            num_projects_check = await db.fetchval(
+                """
+                SELECT COUNT(*)
+                FROM projects
+                WHERE organization_id = $1
+                """,
+                organization_id
+            )
+            if num_projects_check >= 100:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Organization has reached the maximum limit of 100 projects"
+                )
+
             created_project = await db.fetchrow(
                 """
                 INSERT INTO projects (name, organization_id)

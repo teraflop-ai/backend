@@ -5,6 +5,9 @@ from app.schemas.organizations import (
     OrganizationAPIKey,
     OrganizationMembers,
 )
+from fastapi import (
+    HTTPException
+)
 from loguru import logger
 
 async def create_organization(user_id: id, organization_name: str, db: AsyncDB):
@@ -195,11 +198,21 @@ async def create_organization_api_key(
 
 async def get_organization_members(organization_id: int, db: AsyncDB):
     try:
-        organization_members = db.fetch(
+        organization_members = await db.fetch(
             """
-            SELECT *
-            FROM organization_members
-            WHERE organization_id = $1
+            SELECT 
+                om.id,
+                om.organization_id,
+                om.user_id,
+                om.role,
+                om.joined_at,
+                u.email,
+                u.full_name,
+                u.picture_url
+            FROM organization_members om
+            JOIN users u ON om.user_id = u.id
+            WHERE om.organization_id = $1
+            ORDER BY om.joined_at DESC
             """,
             organization_id
         )
@@ -208,6 +221,7 @@ async def get_organization_members(organization_id: int, db: AsyncDB):
         return [OrganizationMembers(**dict(member)) for member in organization_members]
     except:
         raise
+
 
 async def update_organization_name(db: AsyncDB):
     try:
@@ -221,5 +235,22 @@ async def update_organization_name(db: AsyncDB):
     except:
         raise
 
-async def invite_member_to_organization():
-    pass
+
+async def invite_member_to_organization(db: AsyncDB):
+    try:
+        with db.transaction():
+            num_projects_check = await db.fetchval(
+                """
+                SELECT COUNT(*)
+                FROM projects
+                WHERE organization_id = $1
+                """,
+                organization_id
+            )
+            if num_projects_check >= 100:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Organization has reached the maximum limit of 100 projects"
+                )
+    except:
+        raise

@@ -34,6 +34,9 @@ class OrganizationMembers(Struct):
     user_id: int
     role: str
     joined_at: datetime
+    email: str
+    full_name: str
+    picture_url: str
 
 class OrganizationBalance(Struct):
     id: int
