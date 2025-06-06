@@ -10,7 +10,8 @@ from app.core.organizations import (
     select_organization,
     list_organization_api_keys,
     create_organization_api_key,
-    get_organization_members
+    get_organization_members,
+    update_organization_name
 )
 import msgspec
 
@@ -76,5 +77,13 @@ async def get_all_organization_members(db: AsyncDB, current_user: CurrentUser):
 
 
 @organization_router.put("/update-organization-name")
-async def update_organization_name():
-    pass
+async def update_current_organization_name(request: Request, db: AsyncDB, current_user: CurrentUser):
+    body = await request.json()
+    logger.info(body)
+    organization_name = body.get("organization_name")
+    organization_name = await update_organization_name(
+        organization_name,
+        current_user.last_selected_organization_id,
+        db
+    )
+    return msgspec.to_builtins(organization_name)

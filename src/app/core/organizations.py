@@ -220,23 +220,29 @@ async def get_organization_members(organization_id: int, db: AsyncDB):
             raise
         return [OrganizationMembers(**dict(member)) for member in organization_members]
     except:
-        raise
+        raise Exception("Failed to get organization members")
 
 
-async def update_organization_name(db: AsyncDB):
+async def update_organization_name(organization_name: str, organization_id: int, db: AsyncDB):
     try:
-        updated_organization_name = await db.execute(
+        updated_organization_name = await db.fetchrow(
             """
-            UPDATE
-            SET
-            WHERE
-            """
+            UPDATE organizations
+            SET organization_name = $1, updated_at = NOW()
+            WHERE id = $2
+            RETURNING *;
+            """,
+            organization_name,
+            organization_id
         )
+        if not updated_organization_name:
+            raise Exception("Could not find organization")
+        return Organizations(**dict(updated_organization_name))
     except:
-        raise
+        raise Exception("Failed to update organization name")
 
 
-async def invite_member_to_organization(db: AsyncDB):
+async def invite_member_to_organization(organization_id: int, db: AsyncDB):
     try:
         with db.transaction():
             num_projects_check = await db.fetchval(
@@ -247,10 +253,10 @@ async def invite_member_to_organization(db: AsyncDB):
                 """,
                 organization_id
             )
-            if num_projects_check >= 100:
+            if num_projects_check > 100:
                 raise HTTPException(
                     status_code=400,
                     detail="Organization has reached the maximum limit of 100 projects"
                 )
     except:
-        raise
+        raise Exception("Failed to invite member to organization")

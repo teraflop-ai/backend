@@ -235,10 +235,36 @@ async def create_project_api_key(
 
 async def update_project_name(db: AsyncDB):
     try:
-        updated_project_name = await db.fetchrow()
+        updated_project_name = await db.fetchrow(
+            """
+
+            """
+        )
+        return Projects(**dict(updated_project_name))
     except:
-        raise
+        raise Exception("Failed to update project name")
 
 
-async def get_project_members():
-    pass
+async def get_project_members(db: AsyncDB):
+    try:
+        project_members = await db.fetch()
+    except:
+        raise Exception("Failed to get project members")
+
+
+async def archive_project(db: AsyncDB):
+    try:
+        archived_project = await db.execute()
+    except:
+        raise Exception("Failed to archive project")
+    
+async def get_current_project(db: AsyncDB):
+    try:
+        current_project = await db.fetchrow(
+            """
+            SELECT *
+            FROM 
+            """
+        )
+    except:
+        raise Exception("Failed to get current project")
