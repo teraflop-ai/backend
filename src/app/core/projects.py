@@ -258,13 +258,16 @@ async def archive_project(db: AsyncDB):
     except:
         raise Exception("Failed to archive project")
     
-async def get_current_project(db: AsyncDB):
+async def get_current_project(project_id: int, db: AsyncDB):
     try:
         current_project = await db.fetchrow(
             """
             SELECT *
-            FROM 
-            """
+            FROM projects
+            WHERE id = $1
+            """,
+            project_id
         )
+        return Projects(**dict(current_project))
     except:
         raise Exception("Failed to get current project")

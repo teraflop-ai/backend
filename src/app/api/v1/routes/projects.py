@@ -11,7 +11,8 @@ from app.core.projects import (
     select_project,
     list_project_api_keys,
     create_project_api_key,
-    get_project_members
+    get_project_members,
+    get_current_project
 )
 import msgspec
 
@@ -92,3 +93,32 @@ async def create_project_api_key_(
         db
     )
     return msgspec.to_builtins(created_api_key)
+
+@project_router.get("/get-current-project")
+async def get_project(db: AsyncDB, current_user: CurrentUser):
+    current_project = await get_current_project(
+        current_user.last_selected_project_id, 
+        db
+    )
+    return msgspec.to_builtins(current_project)
+
+@project_router.put("/update-project-name")
+async def update_project_name(request: Request, db: AsyncDB, current_user: CurrentUser):
+    try:
+        body = await request.json()
+        logger.info(body)
+        new_project_name = body.get("name")
+        logger.info(new_project_name)
+        update_project = await db.fetchrow(
+            """
+            UPDATE projects
+            SET name = $1, updated_at = NOW()
+            WHERE id = $2
+            RETURNING *
+            """,
+            new_project_name,
+            current_user.last_selected_project_id
+        )
+        return msgspec.to_builtins(dict(update_project)) 
+    except:
+        raise Exception("Failed to update project name")
