@@ -161,6 +161,7 @@ async def select_project(
             organization_id,
             user_id,
         )
+        return {"success": True}
     except:
         raise Exception("Failed to select project")
     

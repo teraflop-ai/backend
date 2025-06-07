@@ -15,7 +15,7 @@ from app.core.projects import (
     get_current_project
 )
 import msgspec
-
+from pydantic import BaseModel
 
 project_router = APIRouter(
     prefix="/projects", 
@@ -31,34 +31,36 @@ async def get_all_projects(db: AsyncDB, current_user: CurrentUser):
     )
     return msgspec.to_builtins(projects)
 
+class CreateProject(BaseModel):
+    name: str
 
 @project_router.post("/create-project")
-async def create_project(request: Request, db: AsyncDB, current_user: CurrentUser):
-    
-    body = await request.json()
-    project_name = body.get("name")
-    
+async def create_project(
+    payload: CreateProject, 
+    db: AsyncDB, 
+    current_user: CurrentUser
+):
     new_project = await create_new_project(
         current_user.id,
-        project_name,
+        payload.name,
         current_user.last_selected_organization_id,
         db
     )
     return new_project
 
+class SelectProject(BaseModel):
+    project_id: int
+    organization_id: int
 
 @project_router.put("/select-project")
 async def select_current_project(
-    request: Request, 
+    payload: SelectProject, 
     current_user: CurrentUser, 
     db: AsyncDB
 ):
-    body = await request.json()
-    project_id = body.get("project_id")
-    organization_id = body.get("organization_id")
     selected_project = await select_project(
-        project_id,
-        organization_id,
+        payload.project_id,
+        payload.organization_id,
         current_user.id,
         db
     )
@@ -74,25 +76,25 @@ async def list_all_project_api_keys(db: AsyncDB, current_user: CurrentUser):
     )
     return msgspec.to_builtins(api_keys)
 
+class CreateProjectAPIKey(BaseModel):
+    name: str
+    project_id: int
 
 @project_router.post("/create-api-key")
 async def create_project_api_key_(
-    request: Request, 
+    payload: CreateProjectAPIKey, 
     db: AsyncDB, 
     current_user: CurrentUser
 ):
-    body = await request.json()
-    api_key_name = body.get("name")
-    project_id = body.get("project_id")
-    logger.info(f"API key name {api_key_name}")
     created_api_key = await create_project_api_key(
-        api_key_name, 
+        payload.name, 
         current_user.last_selected_organization_id,
-        project_id, 
+        payload.project_id, 
         current_user.id, 
         db
     )
     return msgspec.to_builtins(created_api_key)
+
 
 @project_router.get("/get-current-project")
 async def get_project(db: AsyncDB, current_user: CurrentUser):
@@ -102,23 +104,25 @@ async def get_project(db: AsyncDB, current_user: CurrentUser):
     )
     return msgspec.to_builtins(current_project)
 
+class UpdateProjectName(BaseModel):
+    name: str
+
 @project_router.put("/update-project-name")
-async def update_project_name(request: Request, db: AsyncDB, current_user: CurrentUser):
+async def update_project_name(
+    payload: UpdateProjectName, 
+    db: AsyncDB, 
+    current_user: CurrentUser
+):
     try:
-        body = await request.json()
-        logger.info(body)
-        new_project_name = body.get("name")
-        logger.info(new_project_name)
-        update_project = await db.fetchrow(
+        await db.execute(
             """
             UPDATE projects
             SET name = $1, updated_at = NOW()
             WHERE id = $2
-            RETURNING *
             """,
-            new_project_name,
+            payload.name,
             current_user.last_selected_project_id
         )
-        return msgspec.to_builtins(dict(update_project)) 
+        return {"success": True}
     except:
         raise Exception("Failed to update project name")
